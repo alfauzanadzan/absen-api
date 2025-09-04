@@ -14,8 +14,8 @@ export class AuthService {
   // 🔹 LOGIN
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
-
-    const user = await this.prisma.user.findUnique({ where: { username } });
+    // akses prisma.user dari PrismaClient
+    const user = await (this.prisma as any).user.findUnique({ where: { username } });
     if (!user) throw new UnauthorizedException('Username atau password salah');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -38,28 +38,46 @@ export class AuthService {
 
   // 🔹 SEED / RESET SUPER ADMIN
   async seedSuperAdmin() {
-    const hashedPassword = await bcrypt.hash('superadmin123', 10);
-
-    const existing = await this.prisma.user.findUnique({
-      where: { username: 'superadmin' },
-    });
-
-    if (existing) {
-      await this.prisma.user.update({
+    // Seed/Reset Super Admin
+    const superAdminPassword = await bcrypt.hash('superadmin123', 10);
+    const superAdmin = await (this.prisma as any).user.findUnique({ where: { username: 'superadmin' } });
+    if (superAdmin) {
+      await (this.prisma as any).user.update({
         where: { username: 'superadmin' },
-        data: { password: hashedPassword },
+        data: { password: superAdminPassword },
       });
-      console.log('⚡ Super Admin password direset ke superadmin123');
+      console.log('⚡ Super Admin password direset ke superadmin123 (JANGAN GUNAKAN DI PRODUKSI)');
     } else {
-      await this.prisma.user.create({
+      await (this.prisma as any).user.create({
         data: {
           username: 'superadmin',
-          password: hashedPassword,
+          password: superAdminPassword,
           role: 'SUPER_ADMIN',
           email: 'superadmin@example.com',
         },
       });
-      console.log('⚡ Super Admin berhasil dibuat (superadmin123)');
+      console.log('⚡ Super Admin berhasil dibuat (password: superadmin123, JANGAN GUNAKAN DI PRODUKSI)');
+    }
+
+    // Seed/Reset Admin
+    const adminPassword = await bcrypt.hash('admin123', 10);
+    const admin = await (this.prisma as any).user.findUnique({ where: { username: 'admin@example.com' } });
+    if (admin) {
+      await (this.prisma as any).user.update({
+        where: { username: 'admin@example.com' },
+        data: { password: adminPassword },
+      });
+      console.log('⚡ Admin password direset ke admin123 (JANGAN GUNAKAN DI PRODUKSI)');
+    } else {
+      await (this.prisma as any).user.create({
+        data: {
+          username: 'admin@example.com',
+          password: adminPassword,
+          role: 'ADMIN',
+          email: 'admin@example.com',
+        },
+      });
+      console.log('⚡ Admin berhasil dibuat (username & email: admin@example.com, password: admin123, JANGAN GUNAKAN DI PRODUKSI)');
     }
   }
 }
