@@ -1,5 +1,8 @@
+<script setup>
+</script>
+
 <template>
-  <div class="min-h-screen bg-gray-100 text-gray-900">
-    <NuxtPage />
-  </div>
+  <NuxtPage />
 </template>
+
+<style src="~/assets/css/tailwind.css"></style>
