@@ -19,10 +19,13 @@ const handleLogin = async () => {
   if (success) {
     const user = JSON.parse(localStorage.getItem("user")!)
 
+    // 🔹 Redirect sesuai role
     if (user.role === "SUPER_ADMIN") {
       router.push("/dashboard/super")
     } else if (user.role === "ADMIN") {
       router.push("/dashboard/admin")
+    } else if (user.role === "KAPROG") {
+      router.push("/dashboard/kaprog")
     } else {
       router.push("/") // fallback
     }
