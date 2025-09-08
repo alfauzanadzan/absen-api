@@ -1,1 +1,0 @@
-export { default } from "file:///C:/Users/kindi/absen-api/front-end/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"
