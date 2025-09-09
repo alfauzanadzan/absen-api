@@ -12,18 +12,22 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 🔹 LOGIN (debug-friendly)
+  // 🔹 LOGIN
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
-    const user = await (this.prisma as any).user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { username },
     });
 
     console.log('🔹 Login attempt:', username);
-    console.log('🔹 User found:', user ? { username: user.username, password: user.password } : null);
+    console.log(
+      '🔹 User found:',
+      user ? { username: user.username, password: user.password } : null,
+    );
 
-    if (!user) throw new UnauthorizedException('Login gagal, periksa username/password');
+    if (!user)
+      throw new UnauthorizedException('Login gagal, periksa username/password');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     console.log('🔹 Password valid:', isPasswordValid);
@@ -44,13 +48,17 @@ export class AuthService {
     };
   }
 
-  // 🔹 SEED / RESET SUPER ADMIN & ADMIN (aman untuk collab)
+  // 🔹 SEED SUPERADMIN, ADMIN, KAPROG
   async seedSuperAdmin() {
     // ===== Super Admin =====
     const superAdminPassword = await bcrypt.hash('superadmin123', 10);
-    await (this.prisma as any).user.upsert({
+    await this.prisma.user.upsert({
       where: { username: 'superadmin' },
-      update: { password: superAdminPassword },
+      update: {
+        password: superAdminPassword,
+        role: 'SUPER_ADMIN',
+        // email tidak diupdate supaya gak bentrok
+      },
       create: {
         username: 'superadmin',
         password: superAdminPassword,
@@ -58,23 +66,44 @@ export class AuthService {
         email: 'superadmin@example.com',
       },
     });
-    console.log('⚡ Super Admin siap (password: superadmin123)');
+    console.log('⚡ Super Admin siap (username: superadmin, password: superadmin123)');
 
     // ===== Admin =====
-    const adminUsername = 'admin1'; // sesuai pgAdmin
-    const adminEmail = 'admin@example.com';
+    const adminUsername = 'admin1'; // sesuai database lu
     const adminPassword = await bcrypt.hash('admin123', 10);
-
-    await (this.prisma as any).user.upsert({
-      where: { email: adminEmail }, // pakai email sebagai unique
-      update: { password: adminPassword, username: adminUsername },
+    await this.prisma.user.upsert({
+      where: { username: adminUsername },
+      update: {
+        password: adminPassword,
+        role: 'ADMIN',
+        // jangan update email supaya tidak bentrok
+      },
       create: {
         username: adminUsername,
         password: adminPassword,
         role: 'ADMIN',
-        email: adminEmail,
+        email: 'admin@example.com',
       },
     });
     console.log(`⚡ Admin (${adminUsername}) siap (password: admin123)`);
+
+    // ===== Kaprog =====
+    const kaprogUsername = 'kaprog';
+    const kaprogPassword = await bcrypt.hash('kaprog123', 10);
+    await this.prisma.user.upsert({
+      where: { username: kaprogUsername },
+      update: {
+        password: kaprogPassword,
+        role: 'KAPROG',
+        // jangan update email
+      },
+      create: {
+        username: kaprogUsername,
+        password: kaprogPassword,
+        role: 'KAPROG',
+        email: 'kaprog@example.com',
+      },
+    });
+    console.log(`⚡ Kaprog (${kaprogUsername}) siap (password: kaprog123)`);
   }
 }
