@@ -3,9 +3,7 @@
     <!-- Sidebar -->
     <aside class="w-59 bg-white-100 p-6 flex flex-col">
       <!-- Logo -->
-      <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo wikrama.jpg" alt="Logo" class="h-12 w-12" />
-      </div>
+      
 
       <!-- Menu -->
       <nav class="flex flex-col space-y-4">
