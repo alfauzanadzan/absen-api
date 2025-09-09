@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -11,20 +12,27 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 🔹 LOGIN
+  // 🔹 LOGIN (debug-friendly)
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
-    // akses prisma.user dari PrismaClient
-    const user = await (this.prisma as any).user.findUnique({ where: { username } });
-    if (!user) throw new UnauthorizedException('Username atau password salah');
+
+    const user = await (this.prisma as any).user.findUnique({
+      where: { username },
+    });
+
+    console.log('🔹 Login attempt:', username);
+    console.log('🔹 User found:', user ? { username: user.username, password: user.password } : null);
+
+    if (!user) throw new UnauthorizedException('Login gagal, periksa username/password');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('🔹 Password valid:', isPasswordValid);
+
     if (!isPasswordValid)
-      throw new UnauthorizedException('Username atau password salah');
+      throw new UnauthorizedException('Login gagal, periksa username/password');
 
     const payload = { sub: user.id, username: user.username, role: user.role };
 
-    // 🔹 Return token + info user (supaya FE bisa arahkan sesuai role)
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -36,48 +44,37 @@ export class AuthService {
     };
   }
 
-  // 🔹 SEED / RESET SUPER ADMIN
+  // 🔹 SEED / RESET SUPER ADMIN & ADMIN (aman untuk collab)
   async seedSuperAdmin() {
-    // Seed/Reset Super Admin
+    // ===== Super Admin =====
     const superAdminPassword = await bcrypt.hash('superadmin123', 10);
-    const superAdmin = await (this.prisma as any).user.findUnique({ where: { username: 'superadmin' } });
-    if (superAdmin) {
-      await (this.prisma as any).user.update({
-        where: { username: 'superadmin' },
-        data: { password: superAdminPassword },
-      });
-      console.log('⚡ Super Admin password direset ke superadmin123 (JANGAN GUNAKAN DI PRODUKSI)');
-    } else {
-      await (this.prisma as any).user.create({
-        data: {
-          username: 'superadmin',
-          password: superAdminPassword,
-          role: 'SUPER_ADMIN',
-          email: 'superadmin@example.com',
-        },
-      });
-      console.log('⚡ Super Admin berhasil dibuat (password: superadmin123, JANGAN GUNAKAN DI PRODUKSI)');
-    }
+    await (this.prisma as any).user.upsert({
+      where: { username: 'superadmin' },
+      update: { password: superAdminPassword },
+      create: {
+        username: 'superadmin',
+        password: superAdminPassword,
+        role: 'SUPER_ADMIN',
+        email: 'superadmin@example.com',
+      },
+    });
+    console.log('⚡ Super Admin siap (password: superadmin123)');
 
-    // Seed/Reset Admin
+    // ===== Admin =====
+    const adminUsername = 'admin1'; // sesuai pgAdmin
+    const adminEmail = 'admin@example.com';
     const adminPassword = await bcrypt.hash('admin123', 10);
-    const admin = await (this.prisma as any).user.findUnique({ where: { username: 'admin@example.com' } });
-    if (admin) {
-      await (this.prisma as any).user.update({
-        where: { username: 'admin@example.com' },
-        data: { password: adminPassword },
-      });
-      console.log('⚡ Admin password direset ke admin123 (JANGAN GUNAKAN DI PRODUKSI)');
-    } else {
-      await (this.prisma as any).user.create({
-        data: {
-          username: 'admin@example.com',
-          password: adminPassword,
-          role: 'ADMIN',
-          email: 'admin@example.com',
-        },
-      });
-      console.log('⚡ Admin berhasil dibuat (username & email: admin@example.com, password: admin123, JANGAN GUNAKAN DI PRODUKSI)');
-    }
+
+    await (this.prisma as any).user.upsert({
+      where: { email: adminEmail }, // pakai email sebagai unique
+      update: { password: adminPassword, username: adminUsername },
+      create: {
+        username: adminUsername,
+        password: adminPassword,
+        role: 'ADMIN',
+        email: adminEmail,
+      },
+    });
+    console.log(`⚡ Admin (${adminUsername}) siap (password: admin123)`);
   }
 }
