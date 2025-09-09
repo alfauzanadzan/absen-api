@@ -20,13 +20,12 @@ export const useAuth = () => {
 
       console.log("✅ Login success:", res)
 
-      // Simpan token + user di localStorage
       localStorage.setItem("token", res.access_token)
       localStorage.setItem("user", JSON.stringify(res.user))
       user.value = res.user
 
-      // Redirect sesuai role
-      if (res.user.role === "SUPERADMIN") {
+      // ✅ Samakan role dengan backend
+      if (res.user.role === "SUPER_ADMIN") {
         router.push("/superadmin/superadmin")
       } else if (res.user.role === "ADMIN") {
         router.push("/admin/admin")
@@ -44,14 +43,9 @@ export const useAuth = () => {
     }
   }
 
-  // 🔹 Tambahin loadUser
   const loadUser = async () => {
     const saved = localStorage.getItem("user")
-    if (saved) {
-      user.value = JSON.parse(saved)
-    } else {
-      user.value = null
-    }
+    user.value = saved ? JSON.parse(saved) : null
   }
 
   const logout = () => {
