@@ -13,9 +13,15 @@ async function bootstrap() {
   });
 
   // 🔹 Reset / seed superadmin tiap kali start
-  const authService = app.get(AuthService);
-  await authService.seedSuperAdmin();
+  try {
+    const authService = app.get(AuthService);
+    await authService.seedSuperAdmin();
+  } catch (err) {
+    console.error('Seed superadmin error:', err);
+  }
 
   await app.listen(3000);
+  console.log('🚀 Backend running on: http://localhost:3000');
+  console.log('🔑 Login endpoint:    http://localhost:3001/login (POST)');
 }
 bootstrap();

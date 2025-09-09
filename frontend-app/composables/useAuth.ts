@@ -1,58 +1,88 @@
-import { useRouter } from "vue-router"
+// composables/useAuth.ts
+export type Role = "SUPER_ADMIN" | "ADMIN" | "KAPROG" | "PEGAWAI" | string
+
+export type User = {
+  id?: number
+  username: string
+  role: Role
+}
+
+type LoginResponse = {
+  access_token?: string
+  user?: User
+}
 
 export const useAuth = () => {
-  const user = useState("user", () => null)
+  const user = useState<User | null>("user", () => null)
+  const config = useRuntimeConfig()
   const router = useRouter()
+
+  // client-only: gunakan typeof window check
+  const loadUser = async () => {
+    if (typeof window === "undefined") return
+    const raw = localStorage.getItem("user")
+    if (raw) {
+      try {
+        user.value = JSON.parse(raw) as User
+      } catch (e) {
+        console.warn("useAuth: failed to parse user", e)
+        user.value = null
+      }
+    } else {
+      user.value = null
+    }
+  }
+
+  const normalizeRole = (r?: string) =>
+    (r || "").toString().trim().toUpperCase().replace(/\s+/g, "_")
 
   const login = async (username: string, password: string) => {
     try {
-      const config = useRuntimeConfig()
-
-      console.log("📤 Sending payload:", { username, password })
-
-      const res: any = await $fetch(`${config.public.apiBase}/auth/login`, {
+      const res = (await $fetch<LoginResponse>(`${config.public.apiBase}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: {
-          username, // ⚡ kalau backend butuh email, ganti ke email: username
-          password,
-        },
-      })
+        headers: { "Content-Type": "application/json" },
+        body: { username, password },
+      })) as LoginResponse
 
-      console.log("✅ Login success:", res)
+      if (res && res.user) {
+        if (typeof window !== "undefined") {
+          if (res.access_token) localStorage.setItem("token", res.access_token)
+          localStorage.setItem("user", JSON.stringify(res.user))
+        }
+        user.value = res.user
 
-      // Simpan token + user di localStorage
-      localStorage.setItem("token", res.access_token)
-      localStorage.setItem("user", JSON.stringify(res.user))
-      user.value = res.user
-
-      // 🔹 Redirect sesuai role user
-      if (res.user.role === "SUPERADMIN") {
-        router.push("/dashboard/superadmin")
-      } else if (res.user.role === "ADMIN") {
-        router.push("/dashboard/admin")
-      } else if (res.user.role === "KAPROG") {
-        router.push("/dashboard/kaprog")
+        const role = normalizeRole(res.user.role)
+        if (typeof window !== "undefined") {
+          if (role === "SUPER_ADMIN" || role === "SUPERADMIN") {
+            await router.push("/dashboard/super")
+          } else if (role === "ADMIN") {
+            await router.push("/dashboard/admin")
+          } else if (role === "KAPROG") {
+            await router.push("/dashboard/kaprog")
+          } else {
+            await router.push("/")
+          }
+        }
+        return true
       } else {
-        router.push("/") // fallback kalau role tidak dikenal
+        alert("Login gagal — user/role tidak ditemukan pada response.")
+        return false
       }
-
-      return true
     } catch (err: any) {
-      console.error("❌ Login error detail:", err)
-      alert(err?.data?.message || "Login gagal, periksa username/password")
+      console.error("Login error:", err)
+      alert(err?.data?.message || "Login gagal, periksa username & password")
       return false
     }
   }
 
   const logout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+    }
     user.value = null
-    router.push("/login")
+    if (typeof window !== "undefined") router.push("/login")
   }
 
-  return { user, login, logout }
+  return { user, loadUser, login, logout, normalizeRole }
 }

@@ -1,15 +1,19 @@
+<!-- pages/dashboard/super.vue -->
 <script setup lang="ts">
 definePageMeta({
-  middleware: ["role"] // middleware role.ts
+  middleware: ["role"]
 })
 
 const { user, loadUser } = useAuth()
-onMounted(() => loadUser())
+
+onMounted(() => {
+  loadUser()
+})
 </script>
 
 <template>
   <div class="p-8">
     <h1 class="text-3xl font-bold">Super Admin Dashboard</h1>
-    <p class="mt-4">Selamat datang, {{ user?.username }} (Role: {{ user?.role }})</p>
+    <p class="mt-4">Selamat datang, {{ user?.username ?? "Guest" }} (Role: {{ user?.role ?? "-" }})</p>
   </div>
 </template>
