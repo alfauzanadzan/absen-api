@@ -5,11 +5,13 @@ export type User = {
   id?: number
   username: string
   role: Role
+  // tambahkan field lain jika backend mengirimnya
 }
 
 type LoginResponse = {
   access_token?: string
   user?: User
+  // field lain sesuai backend
 }
 
 export const useAuth = () => {
@@ -17,7 +19,7 @@ export const useAuth = () => {
   const config = useRuntimeConfig()
   const router = useRouter()
 
-  // client-only: gunakan typeof window check
+  // client-only loader: gunakan typeof window check agar TS tidak butuh @types/node
   const loadUser = async () => {
     if (typeof window === "undefined") return
     const raw = localStorage.getItem("user")
@@ -25,7 +27,7 @@ export const useAuth = () => {
       try {
         user.value = JSON.parse(raw) as User
       } catch (e) {
-        console.warn("useAuth: failed to parse user", e)
+        console.warn("useAuth: gagal parse user dari localStorage", e)
         user.value = null
       }
     } else {
@@ -41,7 +43,7 @@ export const useAuth = () => {
       const res = (await $fetch<LoginResponse>(`${config.public.apiBase}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: { username, password },
+        body: { username, password }, // ubah key jika backend butuh email
       })) as LoginResponse
 
       if (res && res.user) {
