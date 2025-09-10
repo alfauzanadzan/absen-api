@@ -12,22 +12,17 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 🔹 LOGIN (debug-friendly)
+  // 🔹 LOGIN
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
-    const user = await (this.prisma as any).user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { username },
     });
-
-    console.log('🔹 Login attempt:', username);
-    console.log('🔹 User found:', user ? { username: user.username, password: user.password } : null);
 
     if (!user) throw new UnauthorizedException('Login gagal, periksa username/password');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('🔹 Password valid:', isPasswordValid);
-
     if (!isPasswordValid)
       throw new UnauthorizedException('Login gagal, periksa username/password');
 
@@ -44,12 +39,12 @@ export class AuthService {
     };
   }
 
-  // 🔹 SEED / RESET SUPER ADMIN & ADMIN (aman untuk collab)
+  // 🔹 SEED SUPER ADMIN & ADMIN
   async seedSuperAdmin() {
-    // ===== Super Admin =====
+    // Super Admin
     const superAdminPassword = await bcrypt.hash('superadmin123', 10);
-    await (this.prisma as any).user.upsert({
-      where: { username: 'superadmin' },
+    await this.prisma.user.upsert({
+      where: { email: 'superadmin@example.com' },
       update: { password: superAdminPassword },
       create: {
         username: 'superadmin',
@@ -60,21 +55,18 @@ export class AuthService {
     });
     console.log('⚡ Super Admin siap (password: superadmin123)');
 
-    // ===== Admin =====
-    const adminUsername = 'admin1'; // sesuai pgAdmin
-    const adminEmail = 'admin@example.com';
+    // Admin
     const adminPassword = await bcrypt.hash('admin123', 10);
-
-    await (this.prisma as any).user.upsert({
-      where: { email: adminEmail }, // pakai email sebagai unique
-      update: { password: adminPassword, username: adminUsername },
+    await this.prisma.user.upsert({
+      where: { email: 'admin@example.com' },
+      update: { password: adminPassword, username: 'admin1' },
       create: {
-        username: adminUsername,
+        username: 'admin1',
         password: adminPassword,
         role: 'ADMIN',
-        email: adminEmail,
+        email: 'admin@example.com',
       },
     });
-    console.log(`⚡ Admin (${adminUsername}) siap (password: admin123)`);
+    console.log('⚡ Admin (admin1) siap (password: admin123)');
   }
 }

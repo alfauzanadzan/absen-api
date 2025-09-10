@@ -25,7 +25,7 @@ const handleLogin = async () => {
     } else if (user.role === "ADMIN") {
       router.push("/admin/admin")
     } else if (user.role === "KAPROG") {
-      router.push("/dashboard/kaprog")
+      router.push("/kaprog/kaprog")
     } else {
       router.push("/") // fallback
     }
