@@ -149,7 +149,6 @@ const handleLogout = () => {
         <div class="bg-white p-6 rounded-lg shadow">
           <h3 class="text-lg font-medium mb-3">Quick Actions</h3>
           <div class="space-y-3">
-            <button class="w-full px-4 py-2 bg-blue-600 text-white rounded shadow">Add Worker</button>
             <button class="w-full px-4 py-2 border rounded">Import CSV</button>
             <button class="w-full px-4 py-2 border rounded">Export Report</button>
           </div>
