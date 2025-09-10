@@ -3,6 +3,7 @@
 Monorepo untuk aplikasi **Absensi Digital**, terdiri dari:
 
 - **Backend** → [NestJS](https://nestjs.com/) (`/be-api`)
+- - **Front-end** → [Nuxt](https://nuxt.com/) (`/fe-app`)
 
 
 ---
