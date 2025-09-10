@@ -1,3 +1,4 @@
+// main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';
@@ -5,23 +6,31 @@ import { AuthService } from './auth/auth.service';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ✅ Enable CORS biar Nuxt (http://localhost:3001) bisa call API (http://localhost:3000)
+  // Enable CORS supaya Nuxt (http://localhost:3001) bisa akses API
   app.enableCors({
-    origin: 'http://localhost:3001', // FE Nuxt
+    origin: 'http://localhost:3001',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
+    credentials: true,
   });
 
-  // 🔹 Reset / seed superadmin tiap kali start
+  // Optional: hanya seed di development (hindari seed otomatis di production)
   try {
-    const authService = app.get(AuthService);
-    await authService.seedSuperAdmin();
+    const env = process.env.NODE_ENV || 'development';
+    if (env !== 'production') {
+      const authService = app.get(AuthService);
+      await authService.seedSuperAdmin();
+      console.log('🔹 Seeded superadmin (dev mode)');
+    } else {
+      console.log('🔹 Skipping seedSuperAdmin in production');
+    }
   } catch (err) {
     console.error('Seed superadmin error:', err);
   }
 
   await app.listen(3000);
   console.log('🚀 Backend running on: http://localhost:3000');
-  console.log('🔑 Login endpoint:    http://localhost:3001/login (POST)');
+  console.log('🔑 Login endpoint (frontend): http://localhost:3001/login (POST)');
 }
+
 bootstrap();

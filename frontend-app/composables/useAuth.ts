@@ -46,26 +46,18 @@ export const useAuth = () => {
         body: { username, password }, // ubah key jika backend butuh email
       })) as LoginResponse
 
-      if (res && res.user) {
-        if (typeof window !== "undefined") {
-          if (res.access_token) localStorage.setItem("token", res.access_token)
-          localStorage.setItem("user", JSON.stringify(res.user))
-        }
-        user.value = res.user
+      // Simpan token + user di localStorage
+      localStorage.setItem("token", res.access_token)
+      localStorage.setItem("user", JSON.stringify(res.user))
+      user.value = res.user
 
-        const role = normalizeRole(res.user.role)
-        if (typeof window !== "undefined") {
-          if (role === "SUPER_ADMIN" || role === "SUPERADMIN") {
-            await router.push("/dashboard/super")
-          } else if (role === "ADMIN") {
-            await router.push("/dashboard/admin")
-          } else if (role === "KAPROG") {
-            await router.push("/dashboard/kaprog")
-          } else {
-            await router.push("/")
-          }
-        }
-        return true
+      // Redirect sesuai role
+      if (res.user.role === "SUPERADMIN") {
+        router.push("/superadmin/superadmin")
+      } else if (res.user.role === "ADMIN") {
+        router.push("/admin/admin")
+      } else if (res.user.role === "KAPROG") {
+        router.push("/dashboard/kaprog")
       } else {
         alert("Login gagal — user/role tidak ditemukan pada response.")
         return false
@@ -74,6 +66,16 @@ export const useAuth = () => {
       console.error("Login error:", err)
       alert(err?.data?.message || "Login gagal, periksa username & password")
       return false
+    }
+  }
+
+  // 🔹 Tambahin loadUser
+  const loadUser = async () => {
+    const saved = localStorage.getItem("user")
+    if (saved) {
+      user.value = JSON.parse(saved)
+    } else {
+      user.value = null
     }
   }
 
