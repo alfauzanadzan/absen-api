@@ -104,7 +104,6 @@ const setAvatarPreview = (e: Event) => {
   form.avatarPreview = v
 }
 </script>
-
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
