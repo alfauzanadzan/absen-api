@@ -19,9 +19,15 @@ export const useAuth = () => {
   const config = useRuntimeConfig()
   const router = useRouter()
 
-  // client-only loader: gunakan typeof window check agar TS tidak butuh @types/node
+  // ----- helper -----
+  const isClient = () => typeof window !== "undefined"
+
+  const normalizeRole = (r?: string) =>
+    (r || "").toString().trim().toUpperCase().replace(/\s+/g, "_")
+
+  // ----- load user (single implementation, client-only) -----
   const loadUser = async () => {
-    if (typeof window === "undefined") return
+    if (!isClient()) return
     const raw = localStorage.getItem("user")
     if (raw) {
       try {
@@ -35,10 +41,8 @@ export const useAuth = () => {
     }
   }
 
-  const normalizeRole = (r?: string) =>
-    (r || "").toString().trim().toUpperCase().replace(/\s+/g, "_")
-
-  const login = async (username: string, password: string) => {
+  // ----- login -----
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const res = (await $fetch<LoginResponse>(`${config.public.apiBase}/auth/login`, {
         method: "POST",
@@ -46,22 +50,34 @@ export const useAuth = () => {
         body: { username, password }, // ubah key jika backend butuh email
       })) as LoginResponse
 
-      // Simpan token + user di localStorage
-      localStorage.setItem("token", res.access_token)
-      localStorage.setItem("user", JSON.stringify(res.user))
-      user.value = res.user
-
-      // Redirect sesuai role
-      if (res.user.role === "SUPERADMIN") {
-        router.push("/superadmin/superadmin")
-      } else if (res.user.role === "ADMIN") {
-        router.push("/admin/admin")
-      } else if (res.user.role === "KAPROG") {
-        router.push("/dashboard/kaprog")
-      } else {
+      if (!res || !res.user) {
         alert("Login gagal — user/role tidak ditemukan pada response.")
         return false
       }
+
+      // Simpan token + user di localStorage (client-only)
+      if (isClient()) {
+        if (res.access_token) localStorage.setItem("token", res.access_token)
+        localStorage.setItem("user", JSON.stringify(res.user))
+      }
+      user.value = res.user
+
+      // Normalisasi role lalu redirect (sesuaikan route dengan projectmu)
+      const role = normalizeRole(res.user.role)
+      if (isClient()) {
+        if (role === "SUPER_ADMIN" || role === "SUPERADMIN") {
+          await router.push("/dashboard/super")
+        } else if (role === "ADMIN") {
+          await router.push("/dashboard/admin")
+        } else if (role === "KAPROG") {
+          await router.push("/dashboard/kaprog")
+        } else {
+          // fallback
+          await router.push("/")
+        }
+      }
+
+      return true
     } catch (err: any) {
       console.error("Login error:", err)
       alert(err?.data?.message || "Login gagal, periksa username & password")
@@ -69,23 +85,14 @@ export const useAuth = () => {
     }
   }
 
-  // 🔹 Tambahin loadUser
-  const loadUser = async () => {
-    const saved = localStorage.getItem("user")
-    if (saved) {
-      user.value = JSON.parse(saved)
-    } else {
-      user.value = null
-    }
-  }
-
+  // ----- logout -----
   const logout = () => {
-    if (typeof window !== "undefined") {
+    if (isClient()) {
       localStorage.removeItem("token")
       localStorage.removeItem("user")
+      router.push("/login")
     }
     user.value = null
-    if (typeof window !== "undefined") router.push("/login")
   }
 
   return { user, loadUser, login, logout, normalizeRole }
