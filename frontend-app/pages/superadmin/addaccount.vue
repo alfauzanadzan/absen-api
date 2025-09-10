@@ -67,29 +67,30 @@ const openEdit = (acct: Account) => {
   showModal.value = true
 }
 
-const save = () => {
+const save = async () => {
   if (editing.value) {
-    const idx = accounts.value.findIndex(a => a.id === editing.value!.id)
-    if (idx >= 0) {
-      accounts.value[idx] = {
-        ...accounts.value[idx],
-        name: form.name,
-        position: form.position,
-        role: form.role,
-        avatar: form.avatarPreview || accounts.value[idx].avatar
-      }
-    }
+    // TODO: Implement edit logic with API if needed
+    showModal.value = false
   } else {
-    const id = Math.max(0, ...accounts.value.map(a => a.id)) + 1
-    accounts.value.unshift({
-      id,
-      name: form.name || 'Unnamed',
-      position: form.position || 'STAFF',
-      role: form.role,
-      avatar: form.avatarPreview || `https://i.pravatar.cc/80?img=${Math.floor(Math.random()*70)}`
-    })
+    try {
+      await $fetch('/api/users', {
+        method: 'POST',
+        body: {
+          username: form.username || form.name.toLowerCase().replace(/\s+/g, '.'),
+          email: form.username + '@example.com', // or add email field to form
+          password: form.password,
+          role: form.role,
+        },
+      })
+      // After success, reload accounts from API
+      const res = await $fetch('/api/users')
+      accounts.value = res as Account[]
+      showModal.value = false
+    } catch (err) {
+      alert('Gagal menambahkan akun!')
+      console.error(err)
+    }
   }
-  showModal.value = false
 }
 
 const remove = (id: number) => {

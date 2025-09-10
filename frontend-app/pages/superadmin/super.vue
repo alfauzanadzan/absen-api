@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useAuth } from '@/composables/useAuth' // pastikan path sesuai project
+
 definePageMeta({ middleware: ['role'] })
 
-import { ref, onMounted, onBeforeUnmount } from "vue"
 const { user, loadUser, logout } = useAuth()
 
 // State jam realtime
@@ -52,18 +53,18 @@ const checkOut = async () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-white-100">
+  <div class="flex h-screen bg-gray-100">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
       <!-- Logo -->
-       <div class="flex items-center justify-center h-20 mb-6">
+      <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200 transition">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200 transition">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200 transition">Add Account</a>
       </nav>
     </aside>
 
@@ -110,8 +111,25 @@ const checkOut = async () => {
             Check Out
           </button>
         </div>
-
       </div>
     </main>
   </div>
 </template>
+
+<style scoped>
+/* Warna latar */
+body {
+  background-color: #f3f4f6;
+}
+
+/* Sidebar */
+aside nav a {
+  transition: background-color 0.2s;
+}
+
+/* Tombol */
+button {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+</style>
