@@ -2,7 +2,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 definePageMeta({ middleware: ['role'] })
 
-// --- fake data (ganti dengan API calls) ---
 type Role = 'SUPER_ADMIN' | 'ADMIN' | 'KAPROG' | 'PEGAWAI' | string
 type Account = { id: number; name: string; position: string; role: Role; avatar?: string }
 
@@ -10,7 +9,6 @@ const accounts = ref<Account[]>([
   { id: 1, name: 'Admin HRD', position: 'ADMIN', role: 'ADMIN', avatar: 'https://i.pravatar.cc/80?img=12' },
 ])
 
-// UI state
 const { user, loadUser } = useAuth()
 onMounted(() => {
   if (typeof window !== 'undefined') loadUser()
@@ -21,7 +19,6 @@ const selectedPosition = ref<string | null>(null)
 const showModal = ref(false)
 const editing = ref<Account | null>(null)
 
-// reactive form for modal (safe for v-model)
 const form = reactive({
   name: '',
   username: '',
@@ -32,8 +29,8 @@ const form = reactive({
   avatarPreview: ''
 })
 
-const filtered = computed(() => {
-  return accounts.value.filter(a => {
+const filtered = computed(() =>
+  accounts.value.filter(a => {
     const matchQ =
       !q.value ||
       a.name.toLowerCase().includes(q.value.toLowerCase()) ||
@@ -41,7 +38,7 @@ const filtered = computed(() => {
     const matchPos = !selectedPosition.value || a.position === selectedPosition.value
     return matchQ && matchPos
   })
-})
+)
 
 const openAdd = () => {
   editing.value = null
@@ -97,12 +94,12 @@ const remove = (id: number) => {
   accounts.value = accounts.value.filter(a => a.id !== id)
 }
 
-// simple avatar preview via URL field (ke praktis)
 const setAvatarPreview = (e: Event) => {
   const v = (e.target as HTMLInputElement).value
   form.avatarPreview = v
 }
 </script>
+
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
@@ -128,7 +125,6 @@ const setAvatarPreview = (e: Event) => {
             </h1>
             <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'SUPER ADMIN' }}</p>
           </div>
-
           <div class="flex items-center gap-3">
             <button @click="openAdd" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">Add Account</button>
           </div>
@@ -145,12 +141,9 @@ const setAvatarPreview = (e: Event) => {
               <option>PEGAWAI</option>
             </select>
           </div>
-
-          <!-- small right-aligned info (keperluan styling) -->
           <div class="text-sm text-gray-500">Total: <span class="font-semibold">{{ accounts.length }}</span></div>
         </div>
 
-        <!-- separator -->
         <div class="mt-4 border-t border-gray-300"></div>
 
         <!-- table -->
@@ -165,7 +158,6 @@ const setAvatarPreview = (e: Event) => {
                 <th class="text-right p-4">Actions</th>
               </tr>
             </thead>
-
             <tbody>
               <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
                 <td class="p-4">
@@ -186,7 +178,6 @@ const setAvatarPreview = (e: Event) => {
                   </div>
                 </td>
               </tr>
-
               <tr v-if="filtered.length === 0">
                 <td colspan="5" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
               </tr>
@@ -194,65 +185,61 @@ const setAvatarPreview = (e: Event) => {
           </table>
         </div>
 
-      <!-- Modal -->
-<div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-6">
-    <div class="flex items-center justify-between">
-      <h3 class="text-xl font-semibold">{{ editing ? 'Edit Account' : 'Add Account' }}</h3>
-      <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+        <!-- Modal -->
+        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold">{{ editing ? 'Edit Account' : 'Add Account' }}</h3>
+              <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+
+            <form @submit.prevent="save" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Nama</label>
+                <input v-model="form.name" class="w-full p-2 border rounded" required />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Username</label>
+                <input v-model="form.username" class="w-full p-2 border rounded" />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Position</label>
+                <input v-model="form.position" class="w-full p-2 border rounded" />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Role</label>
+                <select v-model="form.role" class="w-full p-2 border rounded">
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="KAPROG">KAPROG</option>
+                  <option value="PEGAWAI">PEGAWAI</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Avatar URL (opsional)</label>
+                <input v-model="form.avatarPreview" @input="setAvatarPreview" class="w-full p-2 border rounded" placeholder="https://..." />
+              </div>
+              <div v-if="!editing">
+                <label class="block text-sm text-gray-600 mb-1">Password</label>
+                <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
+              </div>
+              <div v-if="!editing">
+                <label class="block text-sm text-gray-600 mb-1">Confirm Password</label>
+                <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />
+              </div>
+              <div class="md:col-span-2 flex justify-end gap-3 mt-2">
+                <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+                  {{ editing ? 'Update' : 'Simpan' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
     </div>
-
-    <form @submit.prevent="save" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Nama</label>
-        <input v-model="form.name" class="w-full p-2 border rounded" required />
-      </div>
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Username</label>
-        <input v-model="form.username" class="w-full p-2 border rounded" />
-      </div>
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Position</label>
-        <input v-model="form.position" class="w-full p-2 border rounded" />
-      </div>
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Role</label>
-        <select v-model="form.role" class="w-full p-2 border rounded">
-          <option value="ADMIN">ADMIN</option>
-          <option value="KAPROG">KAPROG</option>
-          <option value="PEGAWAI">PEGAWAI</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Avatar URL (opsional)</label>
-        <input v-model="form.avatarPreview" @input="setAvatarPreview" class="w-full p-2 border rounded" placeholder="https://..." />
-      </div>
-
-      <!-- PASSWORD hanya tampil kalau tambah akun atau edit -->
-      <div v-if="!editing">
-        <label class="block text-sm text-gray-600 mb-1">Password</label>
-        <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
-      </div>
-      <div v-if="!editing">
-        <label class="block text-sm text-gray-600 mb-1">Confirm Password</label>
-        <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />
-      </div>
-
-      <div class="md:col-span-2 flex justify-end gap-3 mt-2">
-        <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
-          {{ editing ? 'Update' : 'Simpan' }}
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-    </main>
   </div>
 </template>
 
 <style scoped>
-/* small visual tweaks */
 input::placeholder { color: #9CA3AF; }
 </style>
