@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 definePageMeta({ middleware: ['role'] })
 
-type Role = 'SUPER_ADMIN' | 'ADMIN' | 'KAPROG' | 'PEGAWAI' | string
+type Role = 'ADMIN' | string
 type Account = { id: number; name: string; position: string; role: Role; avatar?: string }
 
 const accounts = ref<Account[]>([
@@ -73,7 +73,7 @@ const save = async () => {
     accounts.value.unshift({
       id,
       name: form.name || 'Unnamed',
-      position: form.position || 'STAFF',
+      position: form.position || 'ADMIN',
       role: form.role,
       avatar: form.avatarPreview || `https://i.pravatar.cc/80?img=${Math.floor(Math.random()*70)}`
     })
@@ -138,8 +138,6 @@ const setAvatarPreview = (e: Event) => {
           <select v-model="selectedPosition" class="px-4 py-2 border rounded-md bg-green-100">
             <option :value="null">Position</option>
             <option>ADMIN</option>
-            <option>KAPROG</option>
-            <option>PEGAWAI</option>
           </select>
         </div>
         <div class="text-sm text-gray-500">
@@ -230,8 +228,6 @@ const setAvatarPreview = (e: Event) => {
               <label class="block text-sm text-gray-600 mb-1">Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded">
                 <option value="ADMIN">ADMIN</option>
-                <option value="KAPROG">KAPROG</option>
-                <option value="PEGAWAI">PEGAWAI</option>
               </select>
             </div>
             <div>

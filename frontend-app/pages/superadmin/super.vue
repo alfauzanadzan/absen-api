@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuth } from '@/composables/useAuth' // pastikan path sesuai project
 
 definePageMeta({ middleware: ['role'] })
@@ -119,18 +118,7 @@ const handleLogout = () => {
           </div>
         </div>
 
-        <!-- list divisi -->
-        <div class="mt-6 space-y-4">
-          <div
-            v-for="div in filteredDivisions"
-            :key="div.id"
-            class="p-4 bg-gray-50 rounded-lg flex justify-between items-center"
-          >
-            <span>{{ div.name }}</span>
-            <span>{{ div.count }} pekerja</span>
-          </div>
-        </div>
-      </section>
+      </div>
     </main>
   </div>
 </template>
