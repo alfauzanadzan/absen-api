@@ -1,54 +1,53 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-definePageMeta({ middleware: ['role'] })
+import { ref, onMounted, onBeforeUnmount } from "vue";
+definePageMeta({ middleware: ["role"] });
 
-import { ref, onMounted, onBeforeUnmount } from "vue"
-const { user, loadUser, logout } = useAuth()
+const { user, loadUser, logout } = useAuth();
 
 // State jam realtime
-const time = ref("")
-let interval: NodeJS.Timer | null = null
+const time = ref("");
+let interval: NodeJS.Timeout | null = null;
 
 const updateClock = () => {
-  const now = new Date()
+  const now = new Date();
   time.value = now.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  })
-}
+  });
+};
 
-// Saat mount, load user + jalankan jam
+// Saat mount → load user + jalankan jam
 onMounted(async () => {
-  await loadUser() // ambil user dari DB / API
-  updateClock()
-  interval = setInterval(updateClock, 1000)
-})
+  await loadUser(); // ambil user dari DB / API
+  updateClock();
+  interval = setInterval(updateClock, 1000);
+});
 
 onBeforeUnmount(() => {
-  if (interval) clearInterval(interval)
-})
+  if (interval) clearInterval(interval);
+});
 
 // --- ACTION KE DATABASE ---
 const checkIn = async () => {
   try {
-    await $fetch("/api/attendance/checkin", { method: "POST" })
-    alert("Check-in berhasil!")
+    await $fetch("/api/attendance/checkin", { method: "POST" });
+    alert("Check-in berhasil!");
   } catch (err) {
-    console.error(err)
-    alert("Gagal check-in")
+    console.error(err);
+    alert("Gagal check-in");
   }
-}
+};
 
 const checkOut = async () => {
   try {
-    await $fetch("/api/attendance/checkout", { method: "POST" })
-    alert("Check-out berhasil!")
+    await $fetch("/api/attendance/checkout", { method: "POST" });
+    alert("Check-out berhasil!");
   } catch (err) {
-    console.error(err)
-    alert("Gagal check-out")
+    console.error(err);
+    alert("Gagal check-out");
   }
-}
+};
 </script>
 
 <template>
@@ -56,14 +55,20 @@ const checkOut = async () => {
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
       <!-- Logo -->
-       <div class="flex items-center justify-center h-20 mb-6">
+      <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400"
+          >Dashboard</a
+        >
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400"
+          >Profile</a
+        >
+        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400"
+          >Add Account</a
+        >
       </nav>
     </aside>
 
@@ -76,15 +81,13 @@ const checkOut = async () => {
           <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
         </div>
 
-        <!-- Jam + Logout -->
-        <div class="flex items-center gap-4">
-          <button
-            @click="logout"
-            class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-          >
-            Log Out
-          </button>
-        </div>
+        <!-- Logout -->
+        <button
+          @click="logout"
+          class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+        >
+          Log Out
+        </button>
       </div>
 
       <!-- Clock + Actions -->
@@ -110,7 +113,6 @@ const checkOut = async () => {
             Check Out
           </button>
         </div>
-
       </div>
     </main>
   </div>

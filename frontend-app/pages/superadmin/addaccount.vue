@@ -195,46 +195,59 @@ const setAvatarPreview = (e: Event) => {
         </div>
 
       <!-- Modal -->
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-6">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xl font-semibold">{{ editing ? 'Edit Account' : 'Add Account' }}</h3>
-            <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
-          </div>
+<div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-6">
+    <div class="flex items-center justify-between">
+      <h3 class="text-xl font-semibold">{{ editing ? 'Edit Account' : 'Add Account' }}</h3>
+      <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+    </div>
 
-          <form @submit.prevent="save" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Nama</label>
-              <input v-model="form.name" class="w-full p-2 border rounded" required />
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Username</label>
-              <input v-model="form.username" class="w-full p-2 border rounded" />
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Position</label>
-              <input v-model="form.position" class="w-full p-2 border rounded" />
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Role</label>
-              <select v-model="form.role" class="w-full p-2 border rounded">
-                <option value="ADMIN">ADMIN</option>
-                <option value="KAPROG">KAPROG</option>
-                <option value="PEGAWAI">PEGAWAI</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Avatar URL (opsional)</label>
-              <input v-model="form.avatarPreview" @input="setAvatarPreview" class="w-full p-2 border rounded" placeholder="https://..." />
-            </div>
-
-            <div class="md:col-span-2 flex justify-end gap-3 mt-2">
-              <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
-              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">{{ editing ? 'Update' : 'Simpan' }}</button>
-            </div>
-          </form>
-        </div>
+    <form @submit.prevent="save" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Nama</label>
+        <input v-model="form.name" class="w-full p-2 border rounded" required />
       </div>
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Username</label>
+        <input v-model="form.username" class="w-full p-2 border rounded" />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Position</label>
+        <input v-model="form.position" class="w-full p-2 border rounded" />
+      </div>
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Role</label>
+        <select v-model="form.role" class="w-full p-2 border rounded">
+          <option value="ADMIN">ADMIN</option>
+          <option value="KAPROG">KAPROG</option>
+          <option value="PEGAWAI">PEGAWAI</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Avatar URL (opsional)</label>
+        <input v-model="form.avatarPreview" @input="setAvatarPreview" class="w-full p-2 border rounded" placeholder="https://..." />
+      </div>
+
+      <!-- PASSWORD hanya tampil kalau tambah akun atau edit -->
+      <div v-if="!editing">
+        <label class="block text-sm text-gray-600 mb-1">Password</label>
+        <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
+      </div>
+      <div v-if="!editing">
+        <label class="block text-sm text-gray-600 mb-1">Confirm Password</label>
+        <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />
+      </div>
+
+      <div class="md:col-span-2 flex justify-end gap-3 mt-2">
+        <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+          {{ editing ? 'Update' : 'Simpan' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
     </main>
   </div>
 </template>
