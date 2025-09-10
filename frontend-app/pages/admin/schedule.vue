@@ -11,6 +11,7 @@
         <a href="/admin/admin" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
         <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
         <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
+        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
         <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
         <a href="/admin/schedule" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Schedule</a>
         <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
@@ -31,16 +32,18 @@
       </div>
 
       <!-- Schedule cards -->
-      <div class="flex gap-4 mb-8 flex-wrap">
-        <div
-          v-for="(item, idx) in schedules"
-          :key="idx"
-          class="bg-gray-100 px-6 py-4 rounded text-center w-48"
-        >
-          <div class="text-xl font-bold">{{ item.time }}</div>
-          <div class="text-sm uppercase text-gray-600">{{ item.department }}</div>
-        </div>
-      </div>
+      <!-- Schedule cards -->
+<div class="flex justify-center flex-wrap gap-4 mb-8">
+  <div
+    v-for="(item, idx) in schedules"
+    :key="idx"
+    class="bg-gray-100 px-6 py-4 rounded text-center w-48 shadow"
+  >
+    <div class="text-xl font-bold">{{ item.time }}</div>
+    <div class="text-sm uppercase text-gray-600">{{ item.department }}</div>
+  </div>
+</div>
+
 
       <!-- Real-time clock -->
       <div class="text-4xl font-bold text-center">
