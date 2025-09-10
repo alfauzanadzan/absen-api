@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useAuth } from '@/composables/useAuth' // pastikan path sesuai project
+
 definePageMeta({ middleware: ['role'] })
 
-// gunakan composable useAuth (sesuaikan kalau path/namanya beda)
+import { ref, onMounted, onBeforeUnmount } from "vue"
 const { user, loadUser, logout } = useAuth()
 
 onMounted(() => {
@@ -54,8 +56,8 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white-100 flex">
-    <!-- SIDEBAR -->
+  <div class="flex h-screen bg-white-100">
+    <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
       <!-- Logo -->
       <div class="flex items-center justify-center h-20 mb-6">
@@ -63,7 +65,7 @@ const handleLogout = () => {
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
         <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400">Profile</a>
         <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
       </nav>
@@ -157,11 +159,3 @@ const handleLogout = () => {
     </main>
   </div>
 </template>
-
-
-<style scoped>
-/* small tweak for card borders so accent bg still subtle */
-[aria-hidden="true"] {
-  pointer-events: none;
-}
-</style>

@@ -64,18 +64,10 @@ const openEdit = (acct: Account) => {
   showModal.value = true
 }
 
-const save = () => {
+const save = async () => {
   if (editing.value) {
-    const idx = accounts.value.findIndex(a => a.id === editing.value!.id)
-    if (idx >= 0) {
-      accounts.value[idx] = {
-        ...accounts.value[idx],
-        name: form.name,
-        position: form.position,
-        role: form.role,
-        avatar: form.avatarPreview || accounts.value[idx].avatar
-      }
-    }
+    // TODO: Implement edit logic with API if needed
+    showModal.value = false
   } else {
     const id = Math.max(0, ...accounts.value.map(a => a.id)) + 1
     accounts.value.unshift({
@@ -83,7 +75,7 @@ const save = () => {
       name: form.name || 'Unnamed',
       position: form.position || 'ADMIN',
       role: form.role,
-      avatar: form.avatarPreview || `https://i.pravatar.cc/80?img=${Math.floor(Math.random() * 70)}`
+      avatar: form.avatarPreview || `https://i.pravatar.cc/80?img=${Math.floor(Math.random()*70)}`
     })
   }
   showModal.value = false
