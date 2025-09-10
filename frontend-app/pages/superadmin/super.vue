@@ -56,19 +56,13 @@ const checkOut = async () => {
     <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
       <!-- Logo -->
       <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
+        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />                               
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400"
-          >Dashboard</a
-        >
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400"
-          >Profile</a
-        >
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400"
-          >Add Account</a
-        >
+        <a href="/superadmin/super" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
       </nav>
     </aside>
 
