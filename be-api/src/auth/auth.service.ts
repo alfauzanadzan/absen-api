@@ -30,8 +30,6 @@ export class AuthService {
       throw new UnauthorizedException('Login gagal, periksa username/password');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('🔹 Password valid:', isPasswordValid);
-
     if (!isPasswordValid)
       throw new UnauthorizedException('Login gagal, periksa username/password');
 
@@ -57,7 +55,6 @@ export class AuthService {
       update: {
         password: superAdminPassword,
         role: 'SUPER_ADMIN',
-        // email tidak diupdate supaya gak bentrok
       },
       create: {
         username: 'superadmin',
@@ -69,14 +66,13 @@ export class AuthService {
     console.log('⚡ Super Admin siap (username: superadmin, password: superadmin123)');
 
     // ===== Admin =====
-    const adminUsername = 'admin1'; // sesuai database lu
+    const adminUsername = 'admin1';
     const adminPassword = await bcrypt.hash('admin123', 10);
     await this.prisma.user.upsert({
       where: { username: adminUsername },
       update: {
         password: adminPassword,
         role: 'ADMIN',
-        // jangan update email supaya tidak bentrok
       },
       create: {
         username: adminUsername,
@@ -95,7 +91,6 @@ export class AuthService {
       update: {
         password: kaprogPassword,
         role: 'KAPROG',
-        // jangan update email
       },
       create: {
         username: kaprogUsername,

@@ -1,21 +1,17 @@
 <template>
   <div class="flex h-screen bg-white-100">
     <!-- Sidebar -->
-    <aside class="w-59 bg-white p-6 flex flex-col">
-      <!-- Logo -->
-      <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
-      </div>
-      <!-- Menu -->
-      <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
-        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
-        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
-      </nav>
-    </aside>
+    <aside class="w-60 bg-white p-8 flex flex-col ">
+        <div class="flex items-center justify-center h-20 mb-6">
+          <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
+        </div>
+
+        <nav class="flex flex-col space-y-2 text-gray-700">
+          <a href="/pekerja/pekerja" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
+          <a href="/pekerja/profilpekerja" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
+          <a href="/pekerja/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
+        </nav>
+      </aside>
 
     <!-- Main Content -->
     <main class="flex-1 flex items-center justify-center">

@@ -1,3 +1,4 @@
+// nuxt.config.ts
 export default defineNuxtConfig({
   runtimeConfig: {
     public: {
@@ -9,7 +10,7 @@ export default defineNuxtConfig({
 
   postcss: {
     plugins: {
-      "@tailwindcss/postcss": {}, 
+      "@tailwindcss/postcss": {}, // ✅ pakai plugin baru
       autoprefixer: {},
     },
   },

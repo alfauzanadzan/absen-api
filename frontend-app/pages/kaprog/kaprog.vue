@@ -55,19 +55,18 @@ const checkOut = async () => {
 <template>
   <div class="flex h-screen bg-white-100">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
+    <aside class="w-60 bg-white p-6 flex flex-col ">
       <!-- Logo -->
        <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
-        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+        <a href="/kaprog/kaprog" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
+        <a href="/kaprog/profilkaprog" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/kaprog/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
+        <a href="/kaprog/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
+        <a href="/kaprog/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
       </nav>
     </aside>
 
