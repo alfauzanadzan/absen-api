@@ -2,11 +2,11 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 definePageMeta({ middleware: ['role'] })
 
-type Role = 'SUPER_ADMIN' | 'ADMIN' | 'KAPROG' | 'PEGAWAI' | string
+type Role = 'KAPROG' | 'PEGAWAI' | string
 type Account = { id: number; name: string; position: string; role: Role; avatar?: string }
 
 const accounts = ref<Account[]>([
-  { id: 1, name: 'Admin HRD', position: 'ADMIN', role: 'ADMIN', avatar: 'https://i.pravatar.cc/80?img=12' },
+  { id: 1, name: 'Kaprograman', position: 'KAPROG', role: 'KAPROG', avatar: 'https://i.pravatar.cc/80?img=12' },
 ])
 
 const { user, loadUser } = useAuth()
@@ -23,7 +23,7 @@ const form = reactive({
   name: '',
   username: '',
   position: '',
-  role: 'ADMIN' as Role,
+  role: ' PEGWAI ' as Role,
   password: '',
   confirmPassword: '',
   avatarPreview: ''
@@ -45,7 +45,7 @@ const openAdd = () => {
   form.name = ''
   form.username = ''
   form.position = ''
-  form.role = 'ADMIN'
+  form.role = 'PEGAWAI'
   form.password = ''
   form.confirmPassword = ''
   form.avatarPreview = ''
@@ -81,7 +81,7 @@ const save = () => {
     accounts.value.unshift({
       id,
       name: form.name || 'Unnamed',
-      position: form.position || 'STAFF',
+      position: form.position || 'PEGAWAI',
       role: form.role,
       avatar: form.avatarPreview || `https://i.pravatar.cc/80?img=${Math.floor(Math.random() * 70)}`
     })
@@ -110,9 +110,14 @@ const setAvatarPreview = (e: Event) => {
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2"> 
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400">Profile</a> 
-        <a href="/superadmin/addaccount" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Add Account</a> </nav>
+        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
+        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
+        <a href="/admin/addaccount" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Add Account</a> 
+        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
+        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
+        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+     </nav>
     </aside>
 
     <!-- MAIN -->
@@ -145,7 +150,6 @@ const setAvatarPreview = (e: Event) => {
           />
           <select v-model="selectedPosition" class="px-4 py-2 border rounded-md bg-green-100">
             <option :value="null">Position</option>
-            <option>ADMIN</option>
             <option>KAPROG</option>
             <option>PEGAWAI</option>
           </select>
@@ -237,7 +241,6 @@ const setAvatarPreview = (e: Event) => {
             <div>
               <label class="block text-sm text-gray-600 mb-1">Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded">
-                <option value="ADMIN">ADMIN</option>
                 <option value="KAPROG">KAPROG</option>
                 <option value="PEGAWAI">PEGAWAI</option>
               </select>
