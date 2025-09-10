@@ -110,6 +110,7 @@ const checkOut = async () => {
             Check Out
           </button>
         </div>
+
       </div>
     </main>
   </div>

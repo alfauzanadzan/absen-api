@@ -1,4 +1,3 @@
-<!-- pages/superadmin/addaccount.vue -->
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 definePageMeta({ middleware: ['role'] })
