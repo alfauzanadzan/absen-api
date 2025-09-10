@@ -4,11 +4,9 @@ import { useAuth } from '@/composables/useAuth' // pastikan path sesuai project
 
 definePageMeta({ middleware: ['role'] })
 
-import { ref, onMounted, onBeforeUnmount } from "vue"
 const { user, loadUser, logout } = useAuth()
 
 onMounted(() => {
-  // coba load user dari localStorage (composable mu harus punya loadUser)
   if (typeof window !== 'undefined') loadUser()
 })
 
@@ -56,7 +54,7 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-white-100">
+  <div class="flex h-screen bg-gray-100">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
       <!-- Logo -->
@@ -65,9 +63,9 @@ const handleLogout = () => {
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200 transition">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200 transition">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200 transition">Add Account</a>
       </nav>
     </aside>
 
@@ -95,7 +93,7 @@ const handleLogout = () => {
         <div
           v-for="card in stats"
           :key="card.key"
-          :class="['p-5 rounded-lg shadow-sm bg-white flex items-center justify-between', 'border', accentToBg(card.accent)]"
+          :class="['p-5 rounded-lg shadow-sm bg-white flex items-center justify-between border', accentToBg(card.accent)]"
         >
           <div>
             <div class="text-sm text-gray-500 uppercase">{{ card.label }}</div>
@@ -121,7 +119,18 @@ const handleLogout = () => {
           </div>
         </div>
 
-      </div>
+        <!-- list divisi -->
+        <div class="mt-6 space-y-4">
+          <div
+            v-for="div in filteredDivisions"
+            :key="div.id"
+            class="p-4 bg-gray-50 rounded-lg flex justify-between items-center"
+          >
+            <span>{{ div.name }}</span>
+            <span>{{ div.count }} pekerja</span>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 </template>
