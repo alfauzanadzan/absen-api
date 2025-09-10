@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
+    <aside class="w-60 bg-white p-6 flex flex-col ">
       <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
       </div>
@@ -34,43 +34,46 @@
 
       <!-- Table -->
       <div class="bg-white border-t border-b">
-        <table class="min-w-full">
-          <thead>
-            <tr class="border-b">
-              <th class="text-left px-6 py-4 font-semibold">Nama</th>
-              <th class="text-center px-6 py-4 font-semibold">Employees</th>
-              <th class="text-left px-6 py-4 font-semibold">Action</th>
-            </tr>
-          </thead>
+       <table class="min-w-full">
+  <thead>
+    <tr class="border-b">
+      <th class="text-left px-6 py-4 font-semibold">Nama</th>
+      <th class="text-center px-6 py-4 font-semibold">Employees</th>
+      <th class="text-right px-6 py-4 font-semibold">Action</th>
+    </tr>
+  </thead>
 
-          <tbody>
-            <tr v-for="(row, idx) in reportRows" :key="idx" class="border-b">
-              <td class="px-6 py-4">{{ row.name }}</td>
-              <td class="px-6 py-4 text-center">{{ row.count }}</td>
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                  <button
-                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                    @click="viewRow(row)"
-                  >
-                    View
-                  </button>
-                  <button
-                    class="bg-gray-100 border px-3 py-2 rounded"
-                    @click="exportRow(row)"
-                    title="Export CSV"
-                  >
-                    Export CSV
-                  </button>
-                </div>
-              </td>
-            </tr>
+  <tbody>
+    <tr v-for="(row, idx) in reportRows" :key="idx" class="border-b">
+      <td class="px-6 py-4">{{ row.name }}</td>
+      <td class="px-6 py-4 text-center">{{ row.count }}</td>
+      <td class="px-6 py-4 text-right">
+        <div class="flex justify-end items-center gap-3">
+          <button
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            @click="viewRow(row)"
+          >
+            View
+          </button>
+          <button
+            class="bg-gray-100 border px-3 py-2 rounded"
+            @click="exportRow(row)"
+            title="Export CSV"
+          >
+            Export CSV
+          </button>
+        </div>
+      </td>
+    </tr>
 
-            <tr v-if="reportRows.length === 0">
-              <td colspan="3" class="px-6 py-8 text-center text-gray-500">Tidak ada data.</td>
-            </tr>
-          </tbody>
-        </table>
+    <tr v-if="reportRows.length === 0">
+      <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+        Tidak ada data.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
       </div>
     </main>
 

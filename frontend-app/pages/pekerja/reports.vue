@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-white-100">
     <div class="flex">
       <!-- Sidebar -->
-      <aside class="w-56 bg-white p-6 border-r hidden lg:block">
+      <aside class="w-60 bg-white p-8 flex flex-col ">
         <div class="flex items-center justify-center h-20 mb-6">
           <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
         </div>
@@ -160,10 +160,7 @@
           <div class="mt-6 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-3">
             <div class="text-sm text-gray-500">Showing data for <strong>{{ months[selectedMonth] }}</strong> {{ currentYear }}</div>
 
-            <div class="flex items-center gap-3">
-              <button @click="downloadCSV" class="px-4 py-2 rounded border hover:bg-gray-50">Export CSV</button>
-              <button @click="printPage" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Print</button>
-            </div>
+            
           </div>
         </div>
       </main>

@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
+    <aside class="w-60 bg-white p-6 flex flex-col ">
       <!-- Logo -->
        <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
@@ -12,7 +12,7 @@
         <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
         <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
         <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
+        <a href="/admin/schedule" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Schedule</a>
         <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
       </nav>
     </aside>
