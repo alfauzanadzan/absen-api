@@ -31,16 +31,18 @@
       </div>
 
       <!-- Schedule cards -->
-      <div class="flex gap-4 mb-8 flex-wrap">
-        <div
-          v-for="(item, idx) in schedules"
-          :key="idx"
-          class="bg-gray-100 px-6 py-4 rounded text-center w-48"
-        >
-          <div class="text-xl font-bold">{{ item.time }}</div>
-          <div class="text-sm uppercase text-gray-600">{{ item.department }}</div>
-        </div>
-      </div>
+      <!-- Schedule cards -->
+<div class="flex justify-center flex-wrap gap-4 mb-8">
+  <div
+    v-for="(item, idx) in schedules"
+    :key="idx"
+    class="bg-gray-100 px-6 py-4 rounded text-center w-48 shadow"
+  >
+    <div class="text-xl font-bold">{{ item.time }}</div>
+    <div class="text-sm uppercase text-gray-600">{{ item.department }}</div>
+  </div>
+</div>
+
 
       <!-- Real-time clock -->
       <div class="text-4xl font-bold text-center">
