@@ -50,6 +50,7 @@ const checkOut = async () => {
     alert("Gagal check-out")
   }
 }
+
 </script>
 
 <template>
@@ -111,6 +112,7 @@ const checkOut = async () => {
             Check Out
           </button>
         </div>
+
       </div>
     </main>
   </div>
