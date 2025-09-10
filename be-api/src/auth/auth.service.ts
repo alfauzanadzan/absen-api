@@ -20,7 +20,14 @@ export class AuthService {
       where: { username },
     });
 
-    if (!user) throw new UnauthorizedException('Login gagal, periksa username/password');
+    console.log('🔹 Login attempt:', username);
+    console.log(
+      '🔹 User found:',
+      user ? { username: user.username, password: user.password } : null,
+    );
+
+    if (!user)
+      throw new UnauthorizedException('Login gagal, periksa username/password');
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid)
@@ -39,13 +46,16 @@ export class AuthService {
     };
   }
 
-  // 🔹 SEED SUPER ADMIN & ADMIN
+  // 🔹 SEED SUPERADMIN, ADMIN, KAPROG
   async seedSuperAdmin() {
-    // Super Admin
+    // ===== Super Admin =====
     const superAdminPassword = await bcrypt.hash('superadmin123', 10);
     await this.prisma.user.upsert({
-      where: { email: 'superadmin@example.com' },
-      update: { password: superAdminPassword },
+      where: { username: 'superadmin' },
+      update: {
+        password: superAdminPassword,
+        role: 'SUPER_ADMIN',
+      },
       create: {
         username: 'superadmin',
         password: superAdminPassword,
@@ -53,20 +63,42 @@ export class AuthService {
         email: 'superadmin@example.com',
       },
     });
-    console.log('⚡ Super Admin siap (password: superadmin123)');
+    console.log('⚡ Super Admin siap (username: superadmin, password: superadmin123)');
 
-    // Admin
+    // ===== Admin =====
+    const adminUsername = 'admin1';
     const adminPassword = await bcrypt.hash('admin123', 10);
     await this.prisma.user.upsert({
-      where: { email: 'admin@example.com' },
-      update: { password: adminPassword, username: 'admin1' },
+      where: { username: adminUsername },
+      update: {
+        password: adminPassword,
+        role: 'ADMIN',
+      },
       create: {
-        username: 'admin1',
+        username: adminUsername,
         password: adminPassword,
         role: 'ADMIN',
         email: 'admin@example.com',
       },
     });
-    console.log('⚡ Admin (admin1) siap (password: admin123)');
+    console.log(`⚡ Admin (${adminUsername}) siap (password: admin123)`);
+
+    // ===== Kaprog =====
+    const kaprogUsername = 'kaprog';
+    const kaprogPassword = await bcrypt.hash('kaprog123', 10);
+    await this.prisma.user.upsert({
+      where: { username: kaprogUsername },
+      update: {
+        password: kaprogPassword,
+        role: 'KAPROG',
+      },
+      create: {
+        username: kaprogUsername,
+        password: kaprogPassword,
+        role: 'KAPROG',
+        email: 'kaprog@example.com',
+      },
+    });
+    console.log(`⚡ Kaprog (${kaprogUsername}) siap (password: kaprog123)`);
   }
 }
