@@ -36,12 +36,14 @@ export class UsersService {
     }
 
     return this.prisma.user.update({
-      where: { id },
+      where: { id }, // ✅ langsung string (UUID)
       data: updateData,
     });
   }
 
   async remove(id: string) {
-    return this.prisma.user.delete({ where: { id } });
+    return this.prisma.user.delete({
+      where: { id }, // ✅ langsung string (UUID)
+    });
   }
 }
