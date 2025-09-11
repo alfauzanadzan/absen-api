@@ -1,116 +1,20 @@
-<template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-4">Manajemen Akun</h1>
-
-    <!-- 🔍 Search -->
-    <input
-      v-model="q"
-      placeholder="Cari akun..."
-      class="border p-2 mb-4 w-full rounded"
-    />
-
-    <!-- 📋 List akun -->
-    <table class="w-full border">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="p-2 border">Username</th>
-          <th class="p-2 border">Email</th>
-          <th class="p-2 border">Role</th>
-          <th class="p-2 border">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="acct in filtered" :key="acct.id">
-          <td class="p-2 border">{{ acct.username }}</td>
-          <td class="p-2 border">{{ acct.email }}</td>
-          <td class="p-2 border">{{ acct.role }}</td>
-          <td class="p-2 border">
-            <button
-              class="bg-red-500 text-white px-2 py-1 rounded"
-              @click="remove(acct.id)"
-            >
-              Hapus
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- ➕ Tombol tambah akun -->
-    <button
-      class="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-      @click="openAdd"
-    >
-      Tambah Akun
-    </button>
-
-    <!-- 🔹 Modal tambah akun -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center"
-    >
-      <div class="bg-white p-6 rounded w-96">
-        <h2 class="text-lg font-bold mb-4">
-          {{ editing ? 'Edit Akun' : 'Tambah Akun' }}
-        </h2>
-
-        <input
-          v-model="form.username"
-          placeholder="Username"
-          class="border p-2 mb-2 w-full rounded"
-        />
-        <input
-          type="password"
-          v-model="form.password"
-          placeholder="Password"
-          class="border p-2 mb-2 w-full rounded"
-        />
-        <input
-          type="password"
-          v-model="form.confirmPassword"
-          placeholder="Konfirmasi Password"
-          class="border p-2 mb-4 w-full rounded"
-        />
-
-        <div class="flex justify-end gap-2">
-          <button
-            class="bg-gray-400 text-white px-4 py-2 rounded"
-            @click="showModal = false"
-          >
-            Batal
-          </button>
-          <button
-            class="bg-green-500 text-white px-4 py-2 rounded"
-            @click="save"
-          >
-            Simpan
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 
 definePageMeta({ middleware: ['role'] })
 
-type Role = 'ADMIN' | string
+type Role = 'ADMIN' | 'KAPROG' | 'PEGAWAI'
 type Account = { id: string; username: string; email: string; role: Role }
 
 const accounts = ref<Account[]>([])
-
 const { user, loadUser } = useAuth()
 
-// ✅ ambil data dari backend
+// 🔹 ambil data dari backend
 const fetchAccounts = async () => {
   try {
     const res = await fetch('http://localhost:3000/users', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
     accounts.value = await res.json()
   } catch (err) {
@@ -124,7 +28,6 @@ onMounted(() => {
 })
 
 const q = ref('')
-const selectedPosition = ref<string | null>(null)
 const showModal = ref(false)
 const editing = ref<Account | null>(null)
 
@@ -136,14 +39,11 @@ const form = reactive({
 })
 
 const filtered = computed(() =>
-  accounts.value.filter(a => {
-    const matchQ =
-      !q.value ||
-      a.username.toLowerCase().includes(q.value.toLowerCase()) ||
-      a.email.toLowerCase().includes(q.value.toLowerCase())
-    const matchPos = !selectedPosition.value || a.role === selectedPosition.value
-    return matchQ && matchPos
-  })
+  accounts.value.filter(a =>
+    !q.value ||
+    a.username.toLowerCase().includes(q.value.toLowerCase()) ||
+    a.email.toLowerCase().includes(q.value.toLowerCase())
+  )
 )
 
 const openAdd = () => {
@@ -167,7 +67,7 @@ const openEdit = (acct: Account) => {
 const save = async () => {
   try {
     if (editing.value) {
-      // TODO: implement update user kalau mau
+      // 🔹 update user kalau mau
       showModal.value = false
     } else {
       await fetch('http://localhost:3000/users', {
@@ -178,12 +78,12 @@ const save = async () => {
         },
         body: JSON.stringify({
           username: form.username,
-          email: `${form.username}@mail.com`, // default email
+          email: `${form.username}@mail.com`,
           password: form.password,
-          role: 'ADMIN',
+          role: form.role,
         }),
       })
-      await fetchAccounts() // refresh data setelah tambah
+      await fetchAccounts()
     }
     showModal.value = false
   } catch (err) {
@@ -196,9 +96,7 @@ const remove = async (id: string) => {
   try {
     await fetch(`http://localhost:3000/users/${id}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
     await fetchAccounts()
   } catch (err) {
@@ -206,3 +104,131 @@ const remove = async (id: string) => {
   }
 }
 </script>
+
+<template>
+  <div class="flex h-screen bg-gray-100">
+    <!-- SIDEBAR (khusus superadmin) -->
+    <aside class="w-60 bg-white shadow-md p-6 flex flex-col">
+      <div class="flex items-center justify-center h-20 mb-6">
+        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
+      </div>
+      <nav class="flex flex-col space-y-2">
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Add Account</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 p-8 overflow-y-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-extrabold">
+            SUPERADMIN, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
+          </h1>
+          <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'ADMIN' }}</p>
+        </div>
+        <button
+          @click="openAdd"
+          class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
+        >
+          Tambah Akun
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="mt-6 flex items-center gap-3">
+        <input
+          v-model="q"
+          placeholder="Cari akun..."
+          class="px-4 py-2 border rounded-md w-80 bg-white/90"
+        />
+        <span class="text-sm text-gray-500">Total: {{ accounts.length }}</span>
+      </div>
+
+      <!-- Table -->
+      <div class="mt-6 bg-white rounded-md shadow overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="text-left p-4">Username</th>
+              <th class="text-left p-4">Email</th>
+              <th class="text-left p-4">Role</th>
+              <th class="text-right p-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
+              <td class="p-4">{{ acct.username }}</td>
+              <td class="p-4">{{ acct.email }}</td>
+              <td class="p-4">{{ acct.role }}</td>
+              <td class="p-4 text-right">
+                <div class="inline-flex gap-2">
+                  <button
+                    @click="openEdit(acct)"
+                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click="remove(acct.id)"
+                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="filtered.length === 0">
+              <td colspan="4" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal -->
+      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold">{{ editing ? 'Edit Akun' : 'Tambah Akun' }}</h3>
+            <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+          </div>
+
+          <form @submit.prevent="save" class="mt-4 space-y-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Username</label>
+              <input v-model="form.username" class="w-full p-2 border rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Role</label>
+              <select v-model="form.role" class="w-full p-2 border rounded">
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+            <div v-if="!editing">
+              <label class="block text-sm text-gray-600 mb-1">Password</label>
+              <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
+            </div>
+            <div v-if="!editing">
+              <label class="block text-sm text-gray-600 mb-1">Konfirmasi Password</label>
+              <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+                {{ editing ? 'Update' : 'Simpan' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+
+<style scoped>
+input::placeholder {
+  color: #9CA3AF;
+}
+</style>
