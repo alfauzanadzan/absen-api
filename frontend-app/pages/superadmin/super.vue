@@ -118,7 +118,24 @@ const handleLogout = () => {
           </div>
         </div>
 
-      </div>
+        <!-- list division -->
+        <ul class="mt-6 space-y-4">
+          <li
+            v-for="div in filteredDivisions"
+            :key="div.id"
+            class="flex items-center justify-between"
+          >
+            <span class="font-medium">{{ div.name }}</span>
+            <div class="flex-1 mx-4 h-2 bg-gray-200 rounded">
+              <div
+                class="h-2 bg-indigo-500 rounded"
+                :style="{ width: (div.count / totalWorkers * 100) + '%' }"
+              />
+            </div>
+            <span class="text-gray-600 text-sm">{{ div.count }}</span>
+          </li>
+        </ul>
+      </section>
     </main>
   </div>
 </template>
