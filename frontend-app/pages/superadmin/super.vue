@@ -1,70 +1,94 @@
 <script setup lang="ts">
-import { useAuth } from '@/composables/useAuth' // pastikan path sesuai project
+import { ref, computed, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 
 definePageMeta({ middleware: ['role'] })
 
 const { user, loadUser, logout } = useAuth()
 
-onMounted(() => {
-  if (typeof window !== 'undefined') loadUser()
-})
+// State
+const stats = ref<{ key: string; label: string; value: number; accent: string }[]>([])
+const divisions = ref<{ id: number; name: string; count: number }[]>([])
 
-// --- mock data (ganti pakai API) ---
-type StatCard = { key: string; label: string; value: number; accent: 'green'|'red'|'yellow'|'indigo' }
-const stats = ref<StatCard[]>([
-  { key: 'workers', label: 'Worker', value: 128, accent: 'green' },
-  { key: 'kaprog', label: 'Kaprog', value: 3, accent: 'red' },
-  { key: 'division', label: 'Divisi', value: 3, accent: 'yellow' },
-  { key: 'admin', label: 'Admin', value: 12, accent: 'indigo' },
-])
-
-type Division = { id: number; name: string; count: number }
-const divisions = ref<Division[]>([
-  { id: 1, name: 'Programing', count: 40 },
-  { id: 2, name: 'Designer', count: 40 },
-  { id: 3, name: 'Marketing', count: 48 },
-])
-
-// compute total for percent bars
-const totalWorkers = computed(() => divisions.value.reduce((s, d) => s + d.count, 0) || 1)
-
-// UI state
-const search = ref('')
-const filteredDivisions = computed(() =>
-  divisions.value.filter(d => d.name.toLowerCase().includes(search.value.toLowerCase()))
+const totalWorkers = computed(() =>
+  divisions.value.reduce((s, d) => s + d.count, 0) || 1
 )
 
-// helpers
-const accentToBg = (a: StatCard['accent']) =>
+const search = ref('')
+const filteredDivisions = computed(() =>
+  divisions.value.filter(d =>
+    d.name.toLowerCase().includes(search.value.toLowerCase())
+  )
+)
+
+// Fetch data dari backend
+const fetchStats = async () => {
+  try {
+    const res = await fetch('http://localhost:3000/users', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    const users = await res.json()
+
+    const workerCount = users.filter((u: any) => u.role === 'PEGAWAI').length
+    const kaprogCount = users.filter((u: any) => u.role === 'KAPROG').length
+    const adminCount = users.filter((u: any) => u.role === 'ADMIN').length
+
+    stats.value = [
+      { key: 'workers', label: 'Worker', value: workerCount, accent: 'green' },
+      { key: 'kaprog', label: 'Kaprog', value: kaprogCount, accent: 'red' },
+      { key: 'admin', label: 'Admin', value: adminCount, accent: 'indigo' }
+    ]
+  } catch (err) {
+    console.error('Gagal ambil stats:', err)
+  }
+}
+
+const fetchDivisions = async () => {
+  try {
+    const res = await fetch('http://localhost:3000/divisions', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    divisions.value = await res.json()
+  } catch (err) {
+    console.error('Gagal ambil divisions:', err)
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') loadUser()
+  fetchStats()
+  fetchDivisions()
+})
+
+const handleLogout = () => {
+  logout()
+}
+
+// helpers warna
+const accentToBg = (a: string) =>
   a === 'green' ? 'bg-green-100 text-green-700' :
   a === 'red' ? 'bg-red-100 text-red-700' :
   a === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
   'bg-indigo-100 text-indigo-700'
 
-const accentToNumberColor = (a: StatCard['accent']) =>
+const accentToNumberColor = (a: string) =>
   a === 'green' ? 'text-green-600' :
   a === 'red' ? 'text-red-600' :
   a === 'yellow' ? 'text-yellow-600' :
   'text-indigo-600'
-
-const handleLogout = () => {
-  logout()
-}
 </script>
 
 <template>
   <div class="flex h-screen bg-gray-100">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col shadow-md">
-      <!-- Logo -->
       <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
-      <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200 transition">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200 transition">Profile</a>
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200 transition">Add Account</a>
+        <NuxtLink href="/superadmin/dashboard" class="p-2 rounded hover:bg-gray-200 transition">Dashboard</NuxtLink>
+        <NuxtLink href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200 transition">Profile</NuxtLink>
+        <NuxtLink href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200 transition">Add Account</NuxtLink>
       </nav>
     </aside>
 
@@ -74,7 +98,7 @@ const handleLogout = () => {
       <div class="flex items-start justify-between gap-6">
         <div>
           <h1 class="text-3xl font-bold">
-            WELCOME, <span class="text-indigo-700">{{ user?.username ?? 'Admin' }}</span>
+            WELCOME, <span class="text-indigo-700">{{ user?.username ?? 'Superadmin' }}</span>
           </h1>
           <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'SUPER ADMIN' }}</p>
         </div>
@@ -88,11 +112,11 @@ const handleLogout = () => {
       </div>
 
       <!-- stat cards -->
-      <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           v-for="card in stats"
           :key="card.key"
-          :class="['p-5 rounded-lg shadow-sm bg-white flex items-center justify-between border', accentToBg(card.accent)]"
+          class="p-5 rounded-lg shadow-sm bg-white flex items-center justify-between border"
         >
           <div>
             <div class="text-sm text-gray-500 uppercase">{{ card.label }}</div>
@@ -114,7 +138,6 @@ const handleLogout = () => {
           </div>
           <div class="flex items-center gap-3">
             <input v-model="search" placeholder="Cari divisi..." class="px-3 py-2 border rounded-md" />
-            <NuxtLink to="/dashboard/divisions" class="px-3 py-2 border rounded-md text-sm">Lihat semua</NuxtLink>
           </div>
         </div>
 

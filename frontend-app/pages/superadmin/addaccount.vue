@@ -5,7 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 definePageMeta({ middleware: ['role'] })
 
 type Role = 'ADMIN' | 'KAPROG' | 'PEGAWAI'
-type Account = { id: string; username: string; email: string; role: Role }
+type Account = { id: string; username: string; email: string; role: Role; name?: string }
 
 const accounts = ref<Account[]>([])
 const { user, loadUser } = useAuth()
@@ -33,6 +33,7 @@ const editing = ref<Account | null>(null)
 
 const form = reactive({
   username: '',
+  name: '',
   role: 'ADMIN' as Role,
   password: '',
   confirmPassword: '',
@@ -42,13 +43,15 @@ const filtered = computed(() =>
   accounts.value.filter(a =>
     !q.value ||
     a.username.toLowerCase().includes(q.value.toLowerCase()) ||
-    a.email.toLowerCase().includes(q.value.toLowerCase())
+    a.email.toLowerCase().includes(q.value.toLowerCase()) ||
+    (a.name && a.name.toLowerCase().includes(q.value.toLowerCase()))
   )
 )
 
 const openAdd = () => {
   editing.value = null
   form.username = ''
+  form.name = ''
   form.role = 'ADMIN'
   form.password = ''
   form.confirmPassword = ''
@@ -58,6 +61,7 @@ const openAdd = () => {
 const openEdit = (acct: Account) => {
   editing.value = { ...acct }
   form.username = acct.username
+  form.name = acct.name ?? ''
   form.role = acct.role
   form.password = ''
   form.confirmPassword = ''
@@ -67,8 +71,19 @@ const openEdit = (acct: Account) => {
 const save = async () => {
   try {
     if (editing.value) {
-      // 🔹 update user kalau mau
-      showModal.value = false
+      // 🔹 update user
+      await fetch(`http://localhost:3000/users/${editing.value.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          username: form.username,
+          name: form.name,
+          role: form.role,
+        }),
+      })
     } else {
       await fetch('http://localhost:3000/users', {
         method: 'POST',
@@ -78,13 +93,14 @@ const save = async () => {
         },
         body: JSON.stringify({
           username: form.username,
+          name: form.name,
           email: `${form.username}@mail.com`,
           password: form.password,
           role: form.role,
         }),
       })
-      await fetchAccounts()
     }
+    await fetchAccounts()
     showModal.value = false
   } catch (err) {
     console.error('Gagal simpan akun:', err)
@@ -107,7 +123,7 @@ const remove = async (id: string) => {
 
 <template>
   <div class="flex h-screen bg-gray-100">
-    <!-- SIDEBAR (khusus superadmin) -->
+    <!-- SIDEBAR -->
     <aside class="w-60 bg-white shadow-md p-6 flex flex-col">
       <div class="flex items-center justify-center h-20 mb-6">
         <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
@@ -153,6 +169,7 @@ const remove = async (id: string) => {
           <thead class="bg-gray-50">
             <tr>
               <th class="text-left p-4">Username</th>
+              <th class="text-left p-4">Nama Lengkap</th>
               <th class="text-left p-4">Email</th>
               <th class="text-left p-4">Role</th>
               <th class="text-right p-4">Actions</th>
@@ -161,6 +178,7 @@ const remove = async (id: string) => {
           <tbody>
             <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
               <td class="p-4">{{ acct.username }}</td>
+              <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4">{{ acct.email }}</td>
               <td class="p-4">{{ acct.role }}</td>
               <td class="p-4 text-right">
@@ -181,7 +199,7 @@ const remove = async (id: string) => {
               </td>
             </tr>
             <tr v-if="filtered.length === 0">
-              <td colspan="4" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
+              <td colspan="5" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
             </tr>
           </tbody>
         </table>
@@ -199,6 +217,10 @@ const remove = async (id: string) => {
             <div>
               <label class="block text-sm text-gray-600 mb-1">Username</label>
               <input v-model="form.username" class="w-full p-2 border rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Nama Lengkap</label>
+              <input v-model="form.name" class="w-full p-2 border rounded" required />
             </div>
             <div>
               <label class="block text-sm text-gray-600 mb-1">Role</label>
