@@ -8,11 +8,11 @@
       </div>
       <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/kaprog/profilkaprog" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
-        <a href="/kaprog/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
-        <a href="/kaprog/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/kaprog/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+        <NuxtLink to="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-400">Dashboard</NuxtLink>
+        <NuxtLink to="/kaprog/profilkaprog" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</NuxtLink>
+        <NuxtLink to="/kaprog/employees" class="p-2 rounded hover:bg-gray-400">Employees</NuxtLink>
+        <NuxtLink to="/kaprog/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</NuxtLink>
+        <NuxtLink to="/kaprog/reports" class="p-2 rounded hover:bg-gray-400">Reports</NuxtLink>
       </nav>
     </aside>
 
@@ -25,24 +25,28 @@
         <!-- Judul -->
         <h2 class="text-sm font-semibold mb-4">Profil Saya</h2>
 
-        <!-- Foto Profil -->
-        <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
-      </div>
+        <div class="flex items-center justify-center mb-4">
+          <img
+            :src="user?.avatar || '/images/default-avatar.png'"
+            alt="Profile"
+            class="h-20 w-20 rounded-full border object-cover"
+          />
+        </div>
+
         <!-- Email -->
-        <p class="text-gray-600 text-sm">pakozan@gmail.com</p>
+        <p class="text-gray-600 text-sm">{{ user?.email ?? 'Belum ada email' }}</p>
 
         <!-- Nama -->
-        <h3 class="font-bold text-lg mt-1"> {{ user?.username }} </h3>
+        <h3 class="font-bold text-lg mt-1">{{ user?.username ?? 'Kaprog' }}</h3>
 
         <!-- Jabatan -->
         <p class="text-xs text-gray-700 font-semibold mt-2">
-          KEPALA SEKSI PENGEMBANGAN BIDANG INFORMATIKA
+          {{ user?.position ?? 'KEPALA SEKSI PENGEMBANGAN BIDANG INFORMATIKA' }}
         </p>
 
         <!-- Instansi -->
         <p class="text-xs text-gray-500 mt-1">
-          Dinas Komunikasi dan Informatika Provinsi Sumatera Utara
+          {{ user?.instansi ?? 'Dinas Komunikasi dan Informatika Provinsi Sumatera Utara' }}
         </p>
 
         <!-- Garis bawah kecil -->
@@ -53,7 +57,23 @@
 </template>
 
 <script setup>
-const goDashboard = () => {
-  navigateTo('/dashboard/kaprog')
-}
+import { ref, onMounted } from 'vue'
+import { useFetch } from '#app'
+
+const user = ref(null)
+
+onMounted(async () => {
+  // Ganti URL ini dengan endpoint backend kamu
+  const { data, error } = await useFetch('http://localhost:3000/users/me', {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}` // jika pakai JWT
+    }
+  })
+
+  if (!error.value) {
+    user.value = data.value
+  } else {
+    console.error('Gagal memuat user:', error.value)
+  }
+})
 </script>
