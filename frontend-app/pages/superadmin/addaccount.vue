@@ -70,9 +70,6 @@ const save = () => {
     if (idx >= 0) {
       accounts.value[idx] = {
         ...accounts.value[idx],
-        name: form.name,
-        position: form.position,
-        role: form.role,
         avatar: form.avatarPreview || accounts.value[idx].avatar
       }
     }

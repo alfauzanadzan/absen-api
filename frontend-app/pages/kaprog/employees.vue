@@ -16,7 +16,7 @@
     </aside>
 
     <!-- Main content -->
-    <main class="flex-1 p-8 overflow-y-auto">
+    <main class="flex-1 p-8 overflow-y-auto">7
       <!-- Header row -->
       <div class="flex justify-between items-center mb-25">
         <div>
@@ -27,7 +27,7 @@
           <button
             class="bg-green-400 text-black px-4 py-2 rounded font-medium hover:bg-green-500 transition"
             @click="importPdf"
-          >
+           >
             Import PDF
           </button>
 
