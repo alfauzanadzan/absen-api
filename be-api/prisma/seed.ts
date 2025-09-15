@@ -7,15 +7,17 @@ async function main() {
   // SUPER ADMIN
   const superAdminPassword = await bcrypt.hash("superadmin123", 10)
   await prisma.user.upsert({
-    where: { email: "superadmin@example.com" }, // gunakan email sebagai unique field
+    where: { email: "superadmin@example.com" }, 
     update: {
       username: "superadmin",
+      name: "Super Admin",   // 👈 WAJIB
       password: superAdminPassword,
       role: "SUPER_ADMIN",
     },
     create: {
       username: "superadmin",
       email: "superadmin@example.com",
+      name: "Super Admin",   // 👈 WAJIB
       password: superAdminPassword,
       role: "SUPER_ADMIN",
     },
@@ -28,12 +30,14 @@ async function main() {
     where: { email: "admin@example.com" },
     update: {
       username: "admin",
+      name: "Admin Satu",   // 👈 WAJIB
       password: adminPassword,
       role: "ADMIN",
     },
     create: {
       username: "admin",
       email: "admin@example.com",
+      name: "Admin Satu",   // 👈 WAJIB
       password: adminPassword,
       role: "ADMIN",
     },
@@ -46,12 +50,16 @@ async function main() {
     where: { email: "kaprog@example.com" },
     update: {
       username: "kaprog",
+      name: "Kaprogram A",   // 👈 WAJIB
+      position: "Kepala Program", // 👈 OPSIONAL
       password: kaprogPassword,
       role: "KAPROG",
     },
     create: {
       username: "kaprog",
       email: "kaprog@example.com",
+      name: "Kaprogram A",   // 👈 WAJIB
+      position: "Kepala Program", // 👈 OPSIONAL
       password: kaprogPassword,
       role: "KAPROG",
     },

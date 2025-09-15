@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength } from 'class-validator';
+import { IsString, IsEmail, MinLength, IsOptional } from 'class-validator';
 
 export class CreateAdminDto {
   @IsString()
@@ -8,6 +8,13 @@ export class CreateAdminDto {
   email: string;
 
   @IsString()
+  name: string;   // 👈 tambahin biar sesuai Prisma
+
+  @IsString()
   @MinLength(6)
   password: string;
+
+  @IsOptional()
+  @IsString()
+  position?: string;  // 👈 opsional sesuai schema
 }
