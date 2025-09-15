@@ -4,13 +4,13 @@ import { useAuth } from '@/composables/useAuth'
 
 definePageMeta({ middleware: ['role'] })
 
-type Role = 'ADMIN' | string
-type Account = { id: string; username: string; email: string; role: Role }
+type Role = 'ADMIN' | 'KAPROG' | 'PEGAWAI'
+type Account = { id: string; username: string; email: string; role: Role; name?: string }
 
 const accounts = ref<Account[]>([])
 const { user, loadUser } = useAuth()
 
-// ✅ ambil data dari backend
+// 🔹 ambil data dari backend
 const fetchAccounts = async () => {
   try {
     const res = await fetch('http://localhost:3000/users', {
@@ -37,49 +37,53 @@ const form = reactive({
   role: 'ADMIN' as Role,
   password: '',
   confirmPassword: '',
-  avatarPreview: '',
 })
 
-// Filter pencarian
 const filtered = computed(() =>
-  accounts.value.filter(a => {
-    const matchQ =
-      !q.value ||
-      a.username.toLowerCase().includes(q.value.toLowerCase()) ||
-      a.email.toLowerCase().includes(q.value.toLowerCase())
-    const matchPos = !selectedPosition.value || a.role === selectedPosition.value
-    return matchQ && matchPos
-  })
+  accounts.value.filter(a =>
+    !q.value ||
+    a.username.toLowerCase().includes(q.value.toLowerCase()) ||
+    a.email.toLowerCase().includes(q.value.toLowerCase()) ||
+    (a.name && a.name.toLowerCase().includes(q.value.toLowerCase()))
+  )
 )
 
-// Buka modal tambah
 const openAdd = () => {
   editing.value = null
   form.username = ''
+  form.name = ''
   form.role = 'ADMIN'
   form.password = ''
   form.confirmPassword = ''
   showModal.value = true
 }
 
-// Buka modal edit
 const openEdit = (acct: Account) => {
   editing.value = { ...acct }
   form.username = acct.username
+  form.name = acct.name ?? ''
   form.role = acct.role
   form.password = ''
   form.confirmPassword = ''
   showModal.value = true
 }
 
-// Simpan / update akun
 const save = async () => {
-  console.log('➡ Menyimpan akun:', { ...form, editing: editing.value }) // debug
-
   try {
     if (editing.value) {
-      // TODO: implement update user kalau mau
-      showModal.value = false
+      // 🔹 update user
+      await fetch(`http://localhost:3000/users/${editing.value.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          username: form.username,
+          name: form.name,
+          role: form.role,
+        }),
+      })
     } else {
       await fetch('http://localhost:3000/users', {
         method: 'POST',
@@ -89,21 +93,20 @@ const save = async () => {
         },
         body: JSON.stringify({
           username: form.username,
-          email: `${form.username}@mail.com`, // default email
+          name: form.name,
+          email: `${form.username}@mail.com`,
           password: form.password,
-          role: 'ADMIN',
+          role: form.role,
         }),
       })
-      await fetchAccounts() // refresh data setelah tambah
     }
+    await fetchAccounts()
     showModal.value = false
   } catch (err) {
-    console.error('❌ Gagal simpan akun:', err)
-    alert('Gagal menyimpan akun. Periksa koneksi server atau API.')
+    console.error('Gagal simpan akun:', err)
   }
 }
 
-// Hapus akun
 const remove = async (id: string) => {
   if (!confirm('Yakin hapus akun ini?')) return
   try {
@@ -116,8 +119,138 @@ const remove = async (id: string) => {
     console.error('Gagal hapus akun:', err)
   }
 }
-
-const setAvatarPreview = (e: Event) => {
-  form.avatarPreview = (e.target as HTMLInputElement).value
-}
 </script>
+
+<template>
+  <div class="flex h-screen bg-gray-100">
+    <!-- SIDEBAR -->
+    <aside class="w-60 bg-white shadow-md p-6 flex flex-col">
+      <div class="flex items-center justify-center h-20 mb-6">
+        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
+      </div>
+      <nav class="flex flex-col space-y-2">
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Add Account</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 p-8 overflow-y-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-extrabold">
+            SUPERADMIN, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
+          </h1>
+          <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'ADMIN' }}</p>
+        </div>
+        <button
+          @click="openAdd"
+          class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
+        >
+          Tambah Akun
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="mt-6 flex items-center gap-3">
+        <input
+          v-model="q"
+          placeholder="Cari akun..."
+          class="px-4 py-2 border rounded-md w-80 bg-white/90"
+        />
+        <span class="text-sm text-gray-500">Total: {{ accounts.length }}</span>
+      </div>
+
+      <!-- Table -->
+      <div class="mt-6 bg-white rounded-md shadow overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="text-left p-4">Username</th>
+              <th class="text-left p-4">Nama Lengkap</th>
+              <th class="text-left p-4">Email</th>
+              <th class="text-left p-4">Role</th>
+              <th class="text-right p-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
+              <td class="p-4">{{ acct.username }}</td>
+              <td class="p-4">{{ acct.name ?? '-' }}</td>
+              <td class="p-4">{{ acct.email }}</td>
+              <td class="p-4">{{ acct.role }}</td>
+              <td class="p-4 text-right">
+                <div class="inline-flex gap-2">
+                  <button
+                    @click="openEdit(acct)"
+                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click="remove(acct.id)"
+                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="filtered.length === 0">
+              <td colspan="5" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal -->
+      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold">{{ editing ? 'Edit Akun' : 'Tambah Akun' }}</h3>
+            <button @click="showModal = false" class="text-gray-500 hover:text-gray-700">✕</button>
+          </div>
+
+          <form @submit.prevent="save" class="mt-4 space-y-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Username</label>
+              <input v-model="form.username" class="w-full p-2 border rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Nama Lengkap</label>
+              <input v-model="form.name" class="w-full p-2 border rounded" required />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Role</label>
+              <select v-model="form.role" class="w-full p-2 border rounded">
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+            <div v-if="!editing">
+              <label class="block text-sm text-gray-600 mb-1">Password</label>
+              <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
+            </div>
+            <div v-if="!editing">
+              <label class="block text-sm text-gray-600 mb-1">Konfirmasi Password</label>
+              <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
+                {{ editing ? 'Update' : 'Simpan' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+
+<style scoped>
+input::placeholder {
+  color: #9CA3AF;
+}
+</style>
