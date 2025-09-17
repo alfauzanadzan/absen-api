@@ -1,16 +1,13 @@
 <template>
   <div class="flex h-screen bg-white-100">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <!-- Logo -->
+    <aside class="w-60 bg-white  p-6 flex flex-col">
       <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
-      <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <NuxtLink to="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</NuxtLink>
-        <NuxtLink to="/superadmin/profilsuper" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Profile</NuxtLink>
-        <NuxtLink to="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200">Add Account</NuxtLink>
+        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200">Add Account</a>
       </nav>
     </aside>
 

@@ -81,14 +81,13 @@ const accentToNumberColor = (a: string) =>
 <template>
   <div class="flex h-screen bg-white-100">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
+    <aside class="w-60 bg-white  p-6 flex flex-col">
       <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
       <nav class="flex flex-col space-y-2">
-        <NuxtLink href="/superadmin/dashboard" class="p-2 rounded hover:bg-gray-200 transition">Dashboard</NuxtLink>
-        <NuxtLink href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200 transition">Profile</NuxtLink>
-        <NuxtLink href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200 transition">Add Account</NuxtLink>
+        <a href="/superadmin/super" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200">Profile</a>
+        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200">Add Account</a>
       </nav>
     </aside>
 

@@ -1,17 +1,19 @@
 <template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white border-r p-6 flex flex-col">
+<aside class="w-59 bg-white p-6 flex flex-col">
+      <!-- Logo -->
       <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
       </div>
-
+      <!-- Menu -->
       <nav class="flex flex-col space-y-2">
-        <NuxtLink to="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-200">Dashboard</NuxtLink>
-        <NuxtLink to="/kaprog/profilkaprog" class="p-2 rounded hover:bg-gray-200">Profile</NuxtLink>
-        <NuxtLink to="/kaprog/employees" class="p-2 rounded hover:bg-gray-200">Employees</NuxtLink>
-        <NuxtLink to="/kaprog/attendance" class="p-2 rounded hover:bg-gray-200">Attendance</NuxtLink>
-        <NuxtLink to="/kaprog/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</NuxtLink>
+        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
+        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
+        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
+        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
+        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
+        <a href="/admin/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
       </nav>
     </aside>
 
