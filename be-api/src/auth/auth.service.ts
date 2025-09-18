@@ -20,12 +20,6 @@ export class AuthService {
       where: { username },
     });
 
-    console.log('🔹 Login attempt:', username);
-    console.log(
-      '🔹 User found:',
-      user ? { username: user.username, password: user.password } : null,
-    );
-
     if (!user)
       throw new UnauthorizedException('Login gagal, periksa username/password');
 
@@ -42,6 +36,7 @@ export class AuthService {
         username: user.username,
         role: user.role,
         email: user.email,
+        name: user.name, // ✅ tambahin biar frontend bisa dapet juga
       },
     };
   }
@@ -55,15 +50,19 @@ export class AuthService {
       update: {
         password: superAdminPassword,
         role: 'SUPER_ADMIN',
+        name: 'Super Admin', // ✅ isi name
       },
       create: {
         username: 'superadmin',
         password: superAdminPassword,
         role: 'SUPER_ADMIN',
         email: 'superadmin@example.com',
+        name: 'Super Admin', // ✅ isi name
       },
     });
-    console.log('⚡ Super Admin siap (username: superadmin, password: superadmin123)');
+    console.log(
+      '⚡ Super Admin siap (username: superadmin, password: superadmin123)',
+    );
 
     // ===== Admin =====
     const adminUsername = 'admin1';
@@ -73,12 +72,14 @@ export class AuthService {
       update: {
         password: adminPassword,
         role: 'ADMIN',
+        name: 'Admin 1', // ✅ isi name
       },
       create: {
         username: adminUsername,
         password: adminPassword,
         role: 'ADMIN',
         email: 'admin@example.com',
+        name: 'Admin 1', // ✅ isi name
       },
     });
     console.log(`⚡ Admin (${adminUsername}) siap (password: admin123)`);
@@ -91,12 +92,14 @@ export class AuthService {
       update: {
         password: kaprogPassword,
         role: 'KAPROG',
+        name: 'Kaprogram', // ✅ isi name
       },
       create: {
         username: kaprogUsername,
         password: kaprogPassword,
         role: 'KAPROG',
         email: 'kaprog@example.com',
+        name: 'Kaprogram', // ✅ isi name
       },
     });
     console.log(`⚡ Kaprog (${kaprogUsername}) siap (password: kaprog123)`);
