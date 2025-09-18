@@ -4,7 +4,6 @@
       <!-- Sidebar -->
       <aside class="w-60 bg-white p-8 flex flex-col ">
         <div class="flex items-center justify-center h-20 mb-6">
-          <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
         </div>
 
         <nav class="flex flex-col space-y-2 text-gray-700">

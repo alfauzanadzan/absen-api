@@ -122,11 +122,10 @@ const remove = async (id: string) => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex h-screen bg-white-100">
     <!-- SIDEBAR -->
-    <aside class="w-60 bg-white shadow-md p-6 flex flex-col">
+    <aside class="w-60 bg-white  p-6 flex flex-col">
       <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
       </div>
       <nav class="flex flex-col space-y-2">
         <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>

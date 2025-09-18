@@ -3,7 +3,6 @@
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-8 flex flex-col ">
         <div class="flex items-center justify-center h-20 mb-6">
-          <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
         </div>
 
         <nav class="flex flex-col space-y-2 text-gray-700">
@@ -23,23 +22,28 @@
         <h2 class="text-sm font-semibold mb-4">Profil Saya</h2>
 
         <!-- Foto Profil -->
-        <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12" />
-      </div>
+        <div class="flex items-center justify-center mb-4">
+          <img
+            :src="user?.avatar || '/images/default-avatar.png'"
+            alt="Profile"
+            class="h-20 w-20 rounded-full border object-cover"
+          />
+        </div>
+
         <!-- Email -->
-        <p class="text-gray-600 text-sm">pakozan@gmail.com</p>
+        <p class="text-gray-600 text-sm">{{ user?.email ?? 'Belum ada email' }}</p>
 
         <!-- Nama -->
-        <h3 class="font-bold text-lg mt-1"> {{ user?.username }} </h3>
+        <h3 class="font-bold text-lg mt-1">{{ user?.username ?? 'Pekerja' }}</h3>
 
         <!-- Jabatan -->
         <p class="text-xs text-gray-700 font-semibold mt-2">
-          KEPALA SEKSI PENGEMBANGAN BIDANG INFORMATIKA
+          {{ user?.position ?? 'DIVISI ' }}
         </p>
 
         <!-- Instansi -->
         <p class="text-xs text-gray-500 mt-1">
-          Dinas Komunikasi dan Informatika Provinsi Sumatera Utara
+          {{ user?.instansi ?? 'Dinas Komunikasi dan Informatika Provinsi Sumatera Utara' }}
         </p>
 
         <!-- Garis bawah kecil -->
