@@ -1,4 +1,4 @@
-<template>
+e<template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col ">
