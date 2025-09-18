@@ -26,6 +26,8 @@ const handleLogin = async () => {
       router.push("/admin/admin")
     } else if (user.role === "KAPROG") {
       router.push("/kaprog/kaprog")
+    } else if (user.role === "PEKERJA") {
+      router.push("/pekerja/pekerja") // ✅ pekerja diarahkan ke dashboard pekerja
     } else {
       router.push("/") // fallback
     }

@@ -4,12 +4,20 @@ import { useAuth } from '@/composables/useAuth'
 
 definePageMeta({ middleware: ['role'] })
 
-type Role = 'KAPROG' | 'PEGAWAI'
-type Account = { id: number; name: string; username: string; position: string; role: Role; avatar?: string }
+type Role = 'KAPROG' | 'PEKERJA'
+type Account = { 
+  id: number
+  name: string
+  username: string
+  email: string
+  position?: string
+  role: Role
+  avatar?: string
+}
 
 const accounts = ref<Account[]>([])
-
 const { user, loadUser } = useAuth()
+
 onMounted(() => {
   if (typeof window !== 'undefined') loadUser()
   fetchAccounts()
@@ -38,7 +46,7 @@ const form = reactive({
   name: '',
   username: '',
   position: '',
-  role: 'PEGAWAI' as Role,
+  role: 'PEKERJA' as Role,
   password: '',
   confirmPassword: '',
   avatarPreview: ''
@@ -48,8 +56,8 @@ const filtered = computed(() =>
   accounts.value.filter(a => {
     const matchQ =
       !q.value ||
-      a.name.toLowerCase().includes(q.value.toLowerCase()) ||
-      a.position.toLowerCase().includes(q.value.toLowerCase())
+      a.name?.toLowerCase().includes(q.value.toLowerCase()) ||
+      a.position?.toLowerCase().includes(q.value.toLowerCase())
     const matchPos = !selectedPosition.value || a.position === selectedPosition.value
     return matchQ && matchPos
   })
@@ -60,7 +68,7 @@ const openAdd = () => {
   form.name = ''
   form.username = ''
   form.position = ''
-  form.role = 'PEGAWAI'
+  form.role = 'PEKERJA'
   form.password = ''
   form.confirmPassword = ''
   form.avatarPreview = ''
@@ -71,7 +79,7 @@ const openEdit = (acct: Account) => {
   editing.value = { ...acct }
   form.name = acct.name
   form.username = acct.username
-  form.position = acct.position
+  form.position = acct.position ?? ''
   form.role = acct.role
   form.avatarPreview = acct.avatar ?? ''
   form.password = ''
@@ -94,14 +102,16 @@ const save = async () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          name: form.name,
           username: form.username,
-          position: form.position,
+          email: form.username + '@example.com',
           role: form.role,
           password: form.password,
+          name: form.name,
+          position: form.position,
           avatar: form.avatarPreview,
         }),
       })
+
       if (!res.ok) throw new Error('Gagal tambah akun')
       await fetchAccounts()
       showModal.value = false
@@ -118,10 +128,11 @@ const save = async () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          name: form.name,
           username: form.username,
-          position: form.position,
+          email: form.username + '@example.com',
           role: form.role,
+          name: form.name,
+          position: form.position,
           avatar: form.avatarPreview,
         }),
       })
@@ -206,7 +217,7 @@ const setAvatarPreview = (e: Event) => {
           <select v-model="selectedPosition" class="px-4 py-2 border rounded-md bg-green-100">
             <option :value="null">Position</option>
             <option>KAPROG</option>
-            <option>PEGAWAI</option>
+            <option>PEKERJA</option>
           </select>
         </div>
         <div class="text-sm text-gray-500">
@@ -285,7 +296,7 @@ const setAvatarPreview = (e: Event) => {
               <label class="block text-sm text-gray-600 mb-1">Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded">
                 <option value="KAPROG">KAPROG</option>
-                <option value="PEGAWAI">PEGAWAI</option>
+                <option value="PEKERJA">PEKERJA</option>
               </select>
             </div>
             <div>

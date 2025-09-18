@@ -122,6 +122,7 @@ const remove = async (id: string) => {
 </script>
 
 <template>
+  <!-- template sama persis kayak punya lu -->
   <div class="flex h-screen bg-gray-100">
     <!-- SIDEBAR -->
     <aside class="w-60 bg-white shadow-md p-6 flex flex-col">

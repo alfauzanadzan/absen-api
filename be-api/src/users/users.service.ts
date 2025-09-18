@@ -48,7 +48,9 @@ export class UsersService {
     if (creatorRole === Role.ADMIN) {
       // ADMIN bisa bikin KAPROG / PEKERJA
       if (![Role.KAPROG, Role.PEKERJA].includes(data.role)) {
-        throw new ForbiddenException('ADMIN hanya bisa membuat akun KAPROG atau PEKERJA');
+        throw new ForbiddenException(
+          'ADMIN hanya bisa membuat akun KAPROG atau PEKERJA',
+        );
       }
 
       if (data.role === Role.PEKERJA && !data.position) {
