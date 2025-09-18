@@ -1,9 +1,8 @@
-<template>
+e<template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col ">
       <div class="flex items-center justify-center h-20 mb-6">
-        <img src="/images/logo.jpg" alt="Logo" class="h-12 w-12 rounded" />
       </div>
 
       <nav class="flex flex-col space-y-2">
