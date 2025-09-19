@@ -38,7 +38,7 @@
 
         <!-- Jabatan -->
         <p class="text-xs text-gray-700 font-semibold mt-2">
-          {{ user?.position ?? 'DIVISI ' }}
+          {{ user?.position ?? 'DIVISI PROGRAMING' }}
         </p>
 
         <!-- Instansi -->
