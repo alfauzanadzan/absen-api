@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useAuth } from '@/composables/useAuth'
+import { useAuth } from '@/composables/useAuth' // kalau kamu pakai auto-import, boleh hilangkan import
 
 definePageMeta({ middleware: ['role'] })
 
 type Role = 'KAPROG' | 'PEKERJA'
-type Account = { 
+type Account = {
   id: number
   name: string
   username: string
@@ -15,25 +15,55 @@ type Account = {
   avatar?: string
 }
 
+// state
 const accounts = ref<Account[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+
 const { user, loadUser } = useAuth()
 
 onMounted(() => {
+  // loadUser harus dipanggil di client
   if (typeof window !== 'undefined') loadUser()
   fetchAccounts()
 })
 
-// ✅ ambil akun dari backend
+// fetch dan normalisasi respons agar selalu array
 const fetchAccounts = async () => {
+  loading.value = true
+  error.value = null
   try {
+    // ambil token dengan aman (client-only)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     const res = await fetch('http://localhost:3000/users', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })
-    accounts.value = await res.json()
-  } catch (err) {
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`HTTP ${res.status} - ${text}`)
+    }
+
+    const data = await res.json()
+
+    // normalisasi: kalau API mengembalikan { data: [...] } atau { items: [...] } atau array langsung
+    if (Array.isArray(data)) {
+      accounts.value = data
+    } else if (Array.isArray(data.data)) {
+      accounts.value = data.data
+    } else if (Array.isArray(data.items)) {
+      accounts.value = data.items
+    } else {
+      // fallback: jika endpoint mengembalikan object tunggal, bungkus jadi array
+      console.warn('fetchAccounts: unexpected response shape, assigning fallback array', data)
+      accounts.value = []
+    }
+  } catch (err: any) {
     console.error('Gagal ambil users:', err)
+    error.value = err?.message ?? 'Gagal fetch users'
+    accounts.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -52,16 +82,18 @@ const form = reactive({
   avatarPreview: ''
 })
 
-const filtered = computed(() =>
-  accounts.value.filter(a => {
+const filtered = computed(() => {
+  const term = q.value?.toLowerCase().trim() ?? ''
+  return accounts.value.filter(a => {
     const matchQ =
-      !q.value ||
-      a.name?.toLowerCase().includes(q.value.toLowerCase()) ||
-      a.position?.toLowerCase().includes(q.value.toLowerCase())
+      !term ||
+      (a.name && a.name.toLowerCase().includes(term)) ||
+      (a.position && a.position.toLowerCase().includes(term)) ||
+      (a.username && a.username.toLowerCase().includes(term))
     const matchPos = !selectedPosition.value || a.position === selectedPosition.value
     return matchQ && matchPos
   })
-)
+})
 
 const openAdd = () => {
   editing.value = null
@@ -87,78 +119,74 @@ const openEdit = (acct: Account) => {
   showModal.value = true
 }
 
-// ✅ Simpan akun (POST atau PUT)
 const save = async () => {
+  // minimal validation
+  if (!form.username || !form.name) {
+    alert('Isi username dan name terlebih dahulu')
+    return
+  }
+
   if (!editing.value) {
     if (form.password !== form.confirmPassword) {
       alert('Password tidak sama!')
       return
     }
-    try {
-      const res = await fetch('http://localhost:3000/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          username: form.username,
-          email: form.username + '@example.com',
-          role: form.role,
-          password: form.password,
-          name: form.name,
-          position: form.position,
-          avatar: form.avatarPreview,
-        }),
-      })
+  }
 
-      if (!res.ok) throw new Error('Gagal tambah akun')
-      await fetchAccounts()
-      showModal.value = false
-    } catch (err) {
-      console.error(err)
-      alert('Error tambah akun')
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const url = editing.value ? `http://localhost:3000/users/${editing.value.id}` : 'http://localhost:3000/users'
+    const method = editing.value ? 'PUT' : 'POST'
+    const body: any = {
+      username: form.username,
+      email: form.username + '@example.com',
+      role: form.role,
+      name: form.name,
+      position: form.position,
+      avatar: form.avatarPreview || null,
     }
-  } else {
-    try {
-      const res = await fetch(`http://localhost:3000/users/${editing.value.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          username: form.username,
-          email: form.username + '@example.com',
-          role: form.role,
-          name: form.name,
-          position: form.position,
-          avatar: form.avatarPreview,
-        }),
-      })
-      if (!res.ok) throw new Error('Gagal update akun')
-      await fetchAccounts()
-      showModal.value = false
-    } catch (err) {
-      console.error(err)
-      alert('Error update akun')
+    if (!editing.value) body.password = form.password
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`HTTP ${res.status} - ${text}`)
     }
+
+    // refresh list
+    await fetchAccounts()
+    showModal.value = false
+  } catch (err: any) {
+    console.error('save error', err)
+    alert(err?.message || 'Gagal menyimpan akun')
   }
 }
 
-// ✅ Hapus akun
 const remove = async (id: number) => {
   if (!confirm('Yakin hapus akun ini?')) return
   try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     const res = await fetch(`http://localhost:3000/users/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     })
-    if (!res.ok) throw new Error('Gagal hapus akun')
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`HTTP ${res.status} - ${text}`)
+    }
+    // remove locally for snappy UI
     accounts.value = accounts.value.filter(a => a.id !== id)
-  } catch (err) {
+  } catch (err: any) {
     console.error(err)
-    alert('Error hapus akun')
+    alert(err?.message || 'Gagal hapus akun')
   }
 }
 
@@ -167,6 +195,7 @@ const setAvatarPreview = (e: Event) => {
   form.avatarPreview = v
 }
 </script>
+
 
 <template>
   <div class="flex h-screen bg-white-100">
