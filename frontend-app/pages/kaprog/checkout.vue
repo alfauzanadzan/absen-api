@@ -1,16 +1,11 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ["role"] })
-
-import { ref, onMounted } from "vue"
-import { QrcodeStream } from "vue-qrcode-reader"
+import { ref, onMounted, onBeforeUnmount } from "vue"
 const { user, loadUser, logout } = useAuth()
 
-// State
+// clock
 const time = ref("")
-const message = ref("")
-let interval: NodeJS.Timer | null = null
-
-// Jam realtime
+let clockInterval: number | null = null
 const updateClock = () => {
   const now = new Date()
   time.value = now.toLocaleTimeString([], {
@@ -20,79 +15,250 @@ const updateClock = () => {
   })
 }
 
+// scanner state
+const videoRef = ref<HTMLVideoElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const statusMessage = ref("")
+const mode = ref<"checkin" | "checkout" | null>(null)
+
+let stream: MediaStream | null = null
+let animationId: number | null = null
+let barcodeDetector: any = null
+let jsQRFn: any = null
+let jsQRReady = false
+
+// debounce lock to prevent multiple posts for same code
+let processingLock = false
+
 onMounted(async () => {
   await loadUser()
   updateClock()
-  interval = setInterval(updateClock, 1000)
+  clockInterval = window.setInterval(updateClock, 1000)
 })
 
-// Saat berhasil decode QR
-const onDecode = async (userId: string) => {
-  try {
-    const res = await fetch("http://localhost:3000/attendance/checkin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    })
-    if (res.ok) {
-      message.value = "✅ Absen berhasil (Kaprog)!"
-    } else {
-      message.value = "❌ Gagal absen!"
+onBeforeUnmount(() => {
+  stopScanner()
+  if (clockInterval) {
+    clearInterval(clockInterval)
+    clockInterval = null
+  }
+})
+
+// load jsQR fallback
+const loadJsQR = () =>
+  new Promise<void>((resolve, reject) => {
+    if ((window as any).jsQR) {
+      jsQRFn = (window as any).jsQR
+      jsQRReady = true
+      return resolve()
     }
-  } catch (err) {
-    console.error(err)
-    message.value = "⚠️ Error koneksi!"
+    const s = document.createElement("script")
+    s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"
+    s.onload = () => {
+      jsQRFn = (window as any).jsQR
+      jsQRReady = true
+      resolve()
+    }
+    s.onerror = () => reject(new Error("Failed load jsQR"))
+    document.head.appendChild(s)
+  })
+
+// start scanner
+const startScanner = async (type: "checkin" | "checkout") => {
+  mode.value = type
+  statusMessage.value = `Mode ${type.toUpperCase()} - Mengaktifkan kamera...`
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+    })
+    if (!videoRef.value) throw new Error("Video element tidak tersedia")
+    videoRef.value.srcObject = stream
+    await videoRef.value.play()
+
+    if ((window as any).BarcodeDetector) {
+      try {
+        const formats = await (window as any).BarcodeDetector.getSupportedFormats()
+        barcodeDetector = new (window as any).BarcodeDetector({ formats })
+        statusMessage.value = `Arahkan barcode untuk ${type}`
+      } catch {
+        barcodeDetector = null
+        await loadJsQR()
+        statusMessage.value = `Arahkan QR untuk ${type} (jsQR fallback)`
+      }
+    } else {
+      await loadJsQR()
+      statusMessage.value = `Arahkan QR untuk ${type} (jsQR fallback)`
+    }
+    tick()
+  } catch (err: any) {
+    statusMessage.value = "Gagal akses kamera: " + (err?.message || err)
+    console.error("startScanner error:", err)
   }
 }
 
-// Kamera gagal diinisialisasi
-const onInit = (promise: Promise<any>) => {
-  promise.catch((e) => {
-    console.error("Camera init error:", e)
-    message.value = "⚠️ Kamera tidak bisa diakses"
-  })
+const stopScanner = () => {
+  if (animationId) cancelAnimationFrame(animationId)
+  animationId = null
+  if (videoRef.value) {
+    videoRef.value.pause()
+    videoRef.value.srcObject = null
+  }
+  if (stream) {
+    stream.getTracks().forEach((t) => t.stop())
+    stream = null
+  }
+  processingLock = false
+}
+
+// handle detected code
+const handleCode = async (raw: string) => {
+  if (!raw) return
+  if (processingLock) {
+    console.debug("Skipping code due to lock:", raw)
+    return
+  }
+  processingLock = true
+  try {
+    console.log("Detected code:", raw)
+
+    // QR bisa langsung userId, atau JSON
+    let userId = raw
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && parsed.userId) userId = parsed.userId
+    } catch {
+      // not json
+    }
+
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null
+    const endpoint =
+      mode.value === "checkout"
+        ? "http://localhost:3000/attendance/checkout"
+        : "http://localhost:3000/attendance/checkin"
+
+    console.log("Posting to", endpoint, "userId=", userId)
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ userId }),
+    })
+
+    if (res.ok) {
+      statusMessage.value = `✅ Absen ${mode.value} berhasil untuk ${userId}`
+    } else {
+      const text = await res.text().catch(() => "")
+      statusMessage.value = `❌ Gagal absen: ${res.status} ${text}`
+    }
+  } catch (err) {
+    console.error("handleCode error:", err)
+    statusMessage.value = "⚠ Error saat proses absen"
+  } finally {
+    setTimeout(() => {
+      processingLock = false
+    }, 900)
+  }
+}
+
+// main loop
+const tick = async () => {
+  if (!videoRef.value) {
+    animationId = requestAnimationFrame(tick)
+    return
+  }
+  try {
+    if (barcodeDetector) {
+      const detections = await barcodeDetector.detect(videoRef.value)
+      if (detections?.length) {
+        const raw = detections[0].rawValue ?? ""
+        if (raw) {
+          await handleCode(raw)
+          return
+        }
+      }
+    }
+
+    if (canvasRef.value && jsQRReady) {
+      const video = videoRef.value
+      const ctx = canvasRef.value.getContext("2d")
+      if (ctx && video.videoWidth) {
+        canvasRef.value.width = video.videoWidth
+        canvasRef.value.height = video.videoHeight
+        ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+        const img = ctx.getImageData(0, 0, video.videoWidth, video.videoHeight)
+        const code = jsQRFn(img.data, video.videoWidth, video.videoHeight)
+        if (code && code.data) {
+          await handleCode(code.data)
+          return
+        }
+      }
+    }
+  } catch (e) {
+    console.error("tick error:", e)
+  }
+  animationId = requestAnimationFrame(tick)
 }
 </script>
 
 <template>
-  <br>
-  <div class="flex h-screen">
+  <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col ">
-      <div class="flex items-center justify-center h-20 mb-6">
-      </div>
-
+    <aside class="w-60 bg-white p-6 flex flex-col">
+      <div class="flex items-center justify-center h-20 mb-6"></div>
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/kaprog/checkin" class="p-2 rounded hover:bg-gray-400">Check-in</a>
-        <a href="/kaprog/checkout" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Check-out</a>
+        <a href="/kaprog/kaprog" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
+        <a href="/kaprog/profilkaprog" class="p-2 rounded hover:bg-gray-200">Profile</a>
+        <a href="/kaprog/employees" class="p-2 rounded hover:bg-gray-200">Employees</a>
+        <a href="/kaprog/attendance" class="p-2 rounded hover:bg-gray-200">Attendance</a>
+        <a href="/kaprog/reports" class="p-2 rounded hover:bg-gray-200">Reports</a>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
-      
-
-      <!-- Jam Realtime -->
-      <p class="text-5xl font-bold mb-6">{{ time }}</p>
-
-      <h1 class="text-2xl font-bold mb-4">Scan QR Absen Kaprog</h1>
-
-      <!-- QR Scanner -->
-      <div class="w-[300px] h-[300px] bg-black rounded overflow-hidden">
-        <qrcode-stream @decode="onDecode" @init="onInit" />
+    <!-- Main -->
+    <main class="flex-1 p-8 overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold">WELCOME, {{ user?.username }}</h2>
+          <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
+        </div>
+        <button @click="logout" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+          Log Out
+        </button>
       </div>
 
-      <p class="mt-4 text-gray-600">Arahkan kamera ke QR Code untuk absen</p>
-      <p v-if="message" class="mt-2 font-semibold text-green-600">{{ message }}</p>
+      <div class="flex flex-col items-center mt-20">
+        <p class="text-8xl font-bold">{{ time }}</p>
+        <p class="mt-4 text-gray-600">Pilih mode check-in / check-out dan scan barcode</p>
+
+        <div class="flex gap-4 mt-8">
+          <router-link
+            to="/kaprog/checkin"
+            class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+          >
+            Check In (Scan)
+          </router-link>
+
+          <router-link
+            to="/kaprog/checkout"
+            class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
+          >
+            Check Out (Scan)
+          </router-link>
+        </div>
+
+        <p class="mt-4 text-gray-600">{{ statusMessage }}</p>
+      </div>
     </main>
   </div>
 </template>
 
 <style scoped>
-.qrcode-stream-camera {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+video {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>

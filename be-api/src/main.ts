@@ -2,6 +2,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,7 +15,16 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Optional: hanya seed di development (hindari seed otomatis di production)
+  // Aktifin validasi global
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Optional: seed superadmin cuma di development
   try {
     const env = process.env.NODE_ENV || 'development';
     if (env !== 'production') {

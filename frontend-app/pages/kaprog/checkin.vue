@@ -1,16 +1,28 @@
+<!-- pages/kaprog/checkin.vue -->
 <script setup lang="ts">
 definePageMeta({ middleware: ["role"] })
 
-import { ref, onMounted } from "vue"
-import { QrcodeStream } from "vue-qrcode-reader"
-const { user, loadUser, logout } = useAuth()
+import { ref, onMounted, onBeforeUnmount } from "vue"
+import { useRuntimeConfig } from "#imports"
+import { useAuth } from "@/composables/useAuth"
 
-// State
+const config = useRuntimeConfig()
+const apiBase = config.public?.apiBase ?? "http://localhost:3000"
+
+const { user, loadUser } = useAuth()
+
+// UI state
 const time = ref("")
-const message = ref("")
-let interval: NodeJS.Timer | null = null
+const message = ref<string | null>(null)
+const scanning = ref(false)
+const cameraError = ref<string | null>(null)
+let clockInterval: number | null = null
 
-// Jam realtime
+// ZXing reader + video ref
+let qrReader: any = null
+const videoRef = ref<HTMLVideoElement | null>(null)
+
+// clock
 const updateClock = () => {
   const now = new Date()
   time.value = now.toLocaleTimeString([], {
@@ -20,79 +32,252 @@ const updateClock = () => {
   })
 }
 
-onMounted(async () => {
-  await loadUser()
-  updateClock()
-  interval = setInterval(updateClock, 1000)
-})
+// helper get token
+const getToken = () =>
+  typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-// Saat berhasil decode QR
-const onDecode = async (userId: string) => {
+// send attendance POST
+const postAttendance = async (payload: {
+  userId?: string
+  role?: string
+  qrValue: string
+}) => {
+  message.value = null
   try {
-    const res = await fetch("http://localhost:3000/attendance/checkin", {
+    const token = getToken()
+    const res = await fetch(`${apiBase}/attendance/checkin`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
     })
-    if (res.ok) {
-      message.value = "✅ Absen berhasil (Kaprog)!"
-    } else {
-      message.value = "❌ Gagal absen!"
+
+    const text = await res.text().catch(() => "")
+
+    if (!res.ok) {
+      message.value = `Gagal: ${res.status} ${text || res.statusText}`
+      return false
     }
-  } catch (err) {
-    console.error(err)
-    message.value = "⚠️ Error koneksi!"
+
+    try {
+      const json = text ? JSON.parse(text) : {}
+      message.value = json?.message ?? "Absen berhasil"
+    } catch {
+      message.value = text || "Absen berhasil"
+    }
+    return true
+  } catch (err: any) {
+    console.error("postAttendance error", err)
+    message.value = `Error koneksi: ${err?.message || err}`
+    return false
   }
 }
 
-// Kamera gagal diinisialisasi
-const onInit = (promise: Promise<any>) => {
-  promise.catch((e) => {
-    console.error("Camera init error:", e)
-    message.value = "⚠️ Kamera tidak bisa diakses"
-  })
+// decode handler
+let debounceLock = false
+const handleDecodedRaw = async (raw: string) => {
+  if (!raw || debounceLock) return
+  debounceLock = true
+
+  const actorRole = user?.value?.role ?? "KAPROG"
+
+  let scannedUserId = raw
+  try {
+    const p = JSON.parse(raw)
+    if (p?.userId) scannedUserId = p.userId
+    else if (p?.id) scannedUserId = p.id
+    else if (p?.qrValue) scannedUserId = p.qrValue
+  } catch {
+    // raw tetap string
+  }
+
+  const payload = {
+    userId: scannedUserId,
+    role: actorRole,
+    qrValue: "ABSEN-PINTU-1",
+  }
+
+  await postAttendance(payload)
+
+  setTimeout(() => {
+    debounceLock = false
+  }, 900)
 }
+
+// start ZXing
+const startScanner = async () => {
+  cameraError.value = null
+  scanning.value = false
+  if (typeof window === "undefined") {
+    cameraError.value = "Client-only"
+    return
+  }
+  if (!videoRef.value) {
+    cameraError.value = "Video element belum siap"
+    return
+  }
+
+  try {
+    const ZXing = await import("@zxing/browser")
+    qrReader = new ZXing.BrowserMultiFormatReader()
+    scanning.value = true
+
+    const constraints = { video: { facingMode: { ideal: "environment" } } }
+
+    await qrReader.decodeFromConstraints(
+      constraints,
+      videoRef.value,
+      (result: any, err: any) => {
+        if (result) {
+          handleDecodedRaw(result.getText())
+        } else if (err && err.name !== "NotFoundException") {
+          console.debug("Scanner error:", err)
+        }
+      }
+    )
+  } catch (e: any) {
+    console.error("ZXing init error:", e)
+    cameraError.value = e?.message || "Gagal inisialisasi kamera"
+    scanning.value = false
+  }
+}
+
+const stopScanner = () => {
+  try {
+    if (qrReader) {
+      try {
+        qrReader.reset()
+      } catch (e) {}
+      qrReader = null
+    }
+  } finally {
+    scanning.value = false
+  }
+}
+
+onMounted(async () => {
+  if (typeof window !== "undefined") await loadUser()
+  updateClock()
+  clockInterval = window.setInterval(updateClock, 1000)
+  if (typeof window !== "undefined") await startScanner()
+})
+
+onBeforeUnmount(() => {
+  if (clockInterval) clearInterval(clockInterval)
+  stopScanner()
+})
 </script>
 
 <template>
-  <br>
-  <div class="flex h-screen">
+  <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col ">
+    <aside class="w-60 bg-white p-6 border-r">
       <div class="flex items-center justify-center h-20 mb-6">
+        <div class="text-lg font-bold">KAPROG</div>
       </div>
-
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/kaprog/checkin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Check-in</a>
-        <a href="/kaprog/checkout" class="p-2 rounded hover:bg-gray-400">Check-out</a>
+        <NuxtLink to="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-100">
+          Dashboard
+        </NuxtLink>
+        <NuxtLink
+          to="/kaprog/checkin"
+          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
+        >
+          Check-in
+        </NuxtLink>
+        <NuxtLink to="/kaprog/checkout" class="p-2 rounded hover:bg-gray-100">
+          Check-out
+        </NuxtLink>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
-      
+    <!-- Main -->
+    <main
+      class="flex-1 p-8 overflow-y-auto flex flex-col items-center"
+    >
+      <div class="w-full max-w-2xl">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold">Scan QR Absen Kaprog</h1>
+            <p class="text-sm text-gray-500">
+              Arahkan kamera ke QR Code karyawan
+            </p>
+          </div>
+          <div class="text-right">
+            <div class="text-3xl font-bold">{{ time }}</div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ user?.value?.username ?? "Kaprog" }}
+            </div>
+          </div>
+        </div>
 
-      <!-- Jam Realtime -->
-      <p class="text-5xl font-bold mb-6">{{ time }}</p>
+        <div class="flex flex-col items-center gap-4">
+          <div
+            class="w-80 h-80 bg-black rounded overflow-hidden relative shadow"
+          >
+            <client-only>
+              <video
+                ref="videoRef"
+                autoplay
+                muted
+                playsinline
+                class="w-full h-full object-cover"
+              ></video>
+            </client-only>
 
-      <h1 class="text-2xl font-bold mb-4">Scan QR Absen Kaprog</h1>
+            <div
+              class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
+            >
+              <div>
+                <span v-if="scanning">🔍 Scanning...</span>
+                <span v-else>⏸ Paused</span>
+              </div>
+              <div>
+                <button
+                  v-if="scanning"
+                  @click="stopScanner"
+                  class="px-3 py-1 bg-red-500 rounded text-xs"
+                >
+                  Stop
+                </button>
+                <button
+                  v-else
+                  @click="startScanner"
+                  class="px-3 py-1 bg-green-500 rounded text-xs"
+                >
+                  Start
+                </button>
+              </div>
+            </div>
+          </div>
 
-      <!-- QR Scanner -->
-      <div class="w-[300px] h-[300px] bg-black rounded overflow-hidden">
-        <qrcode-stream @decode="onDecode" @init="onInit" />
+          <div class="text-center">
+            <p v-if="cameraError" class="text-sm text-red-600">
+              {{ cameraError }}
+            </p>
+            <p v-else-if="message" class="text-sm text-green-600">
+              {{ message }}
+            </p>
+            <p v-else class="text-sm text-gray-500">Siap memindai</p>
+          </div>
+
+          <div class="text-xs text-gray-500">
+            Pastikan beri izin akses kamera pada browser. Gunakan localhost atau
+            HTTPS.
+          </div>
+        </div>
       </div>
-
-      <p class="mt-4 text-gray-600">Arahkan kamera ke QR Code untuk absen</p>
-      <p v-if="message" class="mt-2 font-semibold text-green-600">{{ message }}</p>
     </main>
   </div>
 </template>
 
 <style scoped>
-.qrcode-stream-camera {
+video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scaleX(-1); /* mirror front cam, bisa dihapus kalau pakai kamera belakang */
 }
 </style>

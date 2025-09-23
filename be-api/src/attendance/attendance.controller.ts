@@ -1,23 +1,32 @@
+// src/attendance/attendance.controller.ts
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
+import { CheckinDto } from './dto/checkin.dto';
+import { CheckoutDto } from './dto/checkout.dto';
 
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  // API untuk absen (scan QR → kirim userId, role, qrValue)
-  @Post()
-  async create(
-    @Body() data: { userId: string; role: string; qrValue: string },
-  ) {
-    return this.attendanceService.createAttendance(
-      data.userId,
-      data.role,
-      data.qrValue,
-    );
+  // =======================
+  // CHECK IN
+  // =======================
+  @Post('checkin')
+  async checkin(@Body() data: CheckinDto) {
+    return this.attendanceService.checkin(data.userId, data.role, data.qrValue);
   }
 
-  // API untuk lihat semua absensi (buat admin/kaprog)
+  // =======================
+  // CHECK OUT
+  // =======================
+  @Post('checkout')
+  async checkout(@Body() data: CheckoutDto) {
+    return this.attendanceService.checkout(data.userId, data.role, data.qrValue);
+  }
+
+  // =======================
+  // GET ALL
+  // =======================
   @Get()
   async findAll() {
     return this.attendanceService.findAll();
