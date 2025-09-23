@@ -1,4 +1,3 @@
-<!-- pages/kaprog/checkin.vue -->
 <script setup lang="ts">
 definePageMeta({ middleware: ["role"] })
 
@@ -9,6 +8,7 @@ import { useAuth } from "@/composables/useAuth"
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? "http://localhost:3000"
 
+// user: { id: string, username: string, role: string }
 const { user, loadUser } = useAuth()
 
 // UI state
@@ -37,11 +37,7 @@ const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("token") : null
 
 // send attendance POST
-const postAttendance = async (payload: {
-  userId?: string
-  role?: string
-  qrValue: string
-}) => {
+const postAttendance = async (payload: { userId: string; role: "PEKERJA" | "KAPROG"; qrValue: string }) => {
   message.value = null
   try {
     const token = getToken()
@@ -81,22 +77,19 @@ const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return
   debounceLock = true
 
-  const actorRole = user?.value?.role ?? "KAPROG"
-
-  let scannedUserId = raw
-  try {
-    const p = JSON.parse(raw)
-    if (p?.userId) scannedUserId = p.userId
-    else if (p?.id) scannedUserId = p.id
-    else if (p?.qrValue) scannedUserId = p.qrValue
-  } catch {
-    // raw tetap string
+  if (!user.value?.id || !user.value?.role) {
+    message.value = "User belum terload"
+    debounceLock = false
+    return
   }
 
+  const actorRole: "PEKERJA" | "KAPROG" = (unref(user)?.role as "PEKERJA" | "KAPROG") ?? "KAPROG"
+  
+  // Payload sesuai DTO
   const payload = {
-    userId: scannedUserId,
+    userId: String(user.value.id),
     role: actorRole,
-    qrValue: "ABSEN-PINTU-1",
+    qrValue: raw, // Bisa diubah "ABSEN-PINTU-1" jika scan pintu
   }
 
   await postAttendance(payload)
@@ -178,95 +171,51 @@ onBeforeUnmount(() => {
         <div class="text-lg font-bold">KAPROG</div>
       </div>
       <nav class="flex flex-col space-y-2">
-        <NuxtLink to="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-100">
-          Dashboard
-        </NuxtLink>
-        <NuxtLink
-          to="/kaprog/checkin"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Check-in
-        </NuxtLink>
-        <NuxtLink to="/kaprog/checkout" class="p-2 rounded hover:bg-gray-100">
-          Check-out
-        </NuxtLink>
+        <NuxtLink to="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-100">Dashboard</NuxtLink>
+        <NuxtLink to="/kaprog/checkin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Check-in</NuxtLink>
+        <NuxtLink to="/kaprog/checkout" class="p-2 rounded hover:bg-gray-100">Check-out</NuxtLink>
       </nav>
     </aside>
 
     <!-- Main -->
-    <main
-      class="flex-1 p-8 overflow-y-auto flex flex-col items-center"
-    >
+    <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
       <div class="w-full max-w-2xl">
         <div class="flex items-center justify-between mb-6">
           <div>
             <h1 class="text-2xl font-bold">Scan QR Absen Kaprog</h1>
-            <p class="text-sm text-gray-500">
-              Arahkan kamera ke QR Code karyawan
-            </p>
+            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code karyawan</p>
           </div>
           <div class="text-right">
             <div class="text-3xl font-bold">{{ time }}</div>
-            <div class="text-xs text-gray-500 mt-1">
-              {{ user?.value?.username ?? "Kaprog" }}
-            </div>
+            <div class="text-xs text-gray-500 mt-1">{{ user?.username ?? "KAPROG" }}</div>
           </div>
         </div>
 
         <div class="flex flex-col items-center gap-4">
-          <div
-            class="w-80 h-80 bg-black rounded overflow-hidden relative shadow"
-          >
+          <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow">
             <client-only>
-              <video
-                ref="videoRef"
-                autoplay
-                muted
-                playsinline
-                class="w-full h-full object-cover"
-              ></video>
+              <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover"></video>
             </client-only>
 
-            <div
-              class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
-            >
+            <div class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm">
               <div>
                 <span v-if="scanning">🔍 Scanning...</span>
                 <span v-else>⏸ Paused</span>
               </div>
               <div>
-                <button
-                  v-if="scanning"
-                  @click="stopScanner"
-                  class="px-3 py-1 bg-red-500 rounded text-xs"
-                >
-                  Stop
-                </button>
-                <button
-                  v-else
-                  @click="startScanner"
-                  class="px-3 py-1 bg-green-500 rounded text-xs"
-                >
-                  Start
-                </button>
+                <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">Stop</button>
+                <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
               </div>
             </div>
           </div>
 
           <div class="text-center">
-            <p v-if="cameraError" class="text-sm text-red-600">
-              {{ cameraError }}
-            </p>
-            <p v-else-if="message" class="text-sm text-green-600">
-              {{ message }}
-            </p>
+            <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
+            <p v-else-if="message" class="text-sm text-green-600">{{ message }}</p>
             <p v-else class="text-sm text-gray-500">Siap memindai</p>
           </div>
 
-          <div class="text-xs text-gray-500">
-            Pastikan beri izin akses kamera pada browser. Gunakan localhost atau
-            HTTPS.
-          </div>
+          <div class="text-xs text-gray-500">Pastikan beri izin akses kamera pada browser. Gunakan localhost atau HTTPS.</div>
         </div>
       </div>
     </main>
