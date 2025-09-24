@@ -1,8 +1,9 @@
 // src/attendance/attendance.controller.ts
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, BadRequestException } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CheckinDto } from './dto/checkin.dto';
 import { CheckoutDto } from './dto/checkout.dto';
+import { UserRole } from '@prisma/client'; // ✅ Enum Prisma
 
 @Controller('attendance')
 export class AttendanceController {
@@ -13,7 +14,15 @@ export class AttendanceController {
   // =======================
   @Post('checkin')
   async checkin(@Body() data: CheckinDto) {
-    return this.attendanceService.checkin(data.userId, data.role, data.qrValue);
+    if (!Object.values(UserRole).includes(data.role as UserRole)) {
+      throw new BadRequestException('Invalid role');
+    }
+
+    return this.attendanceService.checkin(
+      data.userId,
+      data.role as UserRole, // ✅ cast ke enum
+      data.qrValue,
+    );
   }
 
   // =======================
@@ -21,7 +30,15 @@ export class AttendanceController {
   // =======================
   @Post('checkout')
   async checkout(@Body() data: CheckoutDto) {
-    return this.attendanceService.checkout(data.userId, data.role, data.qrValue);
+    if (!Object.values(UserRole).includes(data.role as UserRole)) {
+      throw new BadRequestException('Invalid role');
+    }
+
+    return this.attendanceService.checkout(
+      data.userId,
+      data.role as UserRole, // ✅ cast ke enum
+      data.qrValue,
+    );
   }
 
   // =======================

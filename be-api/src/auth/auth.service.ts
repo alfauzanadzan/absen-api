@@ -1,9 +1,9 @@
-// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -20,12 +20,14 @@ export class AuthService {
       where: { username },
     });
 
-    if (!user)
+    if (!user) {
       throw new UnauthorizedException('Login gagal, periksa username/password');
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid)
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Login gagal, periksa username/password');
+    }
 
     const payload = { sub: user.id, username: user.username, role: user.role };
 
@@ -37,12 +39,12 @@ export class AuthService {
         role: user.role,
         email: user.email,
         name: user.name,
-        position: user.position, // buat pekerja
+        position: user.position,
       },
     };
   }
 
-  // 🔹 SEED SEMUA USER (SUPERADMIN, ADMIN, KAPROG, PEKERJA)
+  // 🔹 SEED USER
   async seedSuperAdmin() {
     // ===== Super Admin =====
     const superAdminPassword = await bcrypt.hash('superadmin123', 10);
@@ -50,20 +52,17 @@ export class AuthService {
       where: { username: 'superadmin' },
       update: {
         password: superAdminPassword,
-        role: 'SUPER_ADMIN',
+        role: UserRole.SUPERADMIN,
         name: 'Super Admin',
       },
       create: {
         username: 'superadmin',
         password: superAdminPassword,
-        role: 'SUPER_ADMIN',
+        role: UserRole.SUPERADMIN,
         email: 'superadmin@example.com',
         name: 'Super Admin',
       },
     });
-    console.log(
-      '⚡ Super Admin siap (username: superadmin, password: superadmin123)',
-    );
 
     // ===== Admin =====
     const adminPassword = await bcrypt.hash('admin123', 10);
@@ -71,18 +70,17 @@ export class AuthService {
       where: { username: 'admin1' },
       update: {
         password: adminPassword,
-        role: 'ADMIN',
+        role: UserRole.ADMIN,
         name: 'Admin 1',
       },
       create: {
         username: 'admin1',
         password: adminPassword,
-        role: 'ADMIN',
+        role: UserRole.ADMIN,
         email: 'admin@example.com',
         name: 'Admin 1',
       },
     });
-    console.log('⚡ Admin (admin1) siap (password: admin123)');
 
     // ===== Kaprog =====
     const kaprogPassword = await bcrypt.hash('kaprog123', 10);
@@ -90,18 +88,17 @@ export class AuthService {
       where: { username: 'kaprog' },
       update: {
         password: kaprogPassword,
-        role: 'KAPROG',
+        role: UserRole.KAPROG,
         name: 'Kaprogram',
       },
       create: {
         username: 'kaprog',
         password: kaprogPassword,
-        role: 'KAPROG',
+        role: UserRole.KAPROG,
         email: 'kaprog@example.com',
         name: 'Kaprogram',
       },
     });
-    console.log('⚡ Kaprog (kaprog) siap (password: kaprog123)');
 
     // ===== Pekerja =====
     const pekerjaPassword = await bcrypt.hash('pekerja123', 10);
@@ -109,19 +106,20 @@ export class AuthService {
       where: { username: 'pekerja1' },
       update: {
         password: pekerjaPassword,
-        role: 'PEKERJA',
+        role: UserRole.PEKERJA,
         name: 'Pekerja 1',
         position: 'Operator Mesin',
       },
       create: {
         username: 'pekerja1',
         password: pekerjaPassword,
-        role: 'PEKERJA',
+        role: UserRole.PEKERJA,
         email: 'pekerja1@example.com',
         name: 'Pekerja 1',
         position: 'Operator Mesin',
       },
     });
-    console.log('⚡ Pekerja (pekerja1) siap (password: pekerja123)');
+
+    return { message: '✅ User seed berhasil: superadmin, admin1, kaprog, pekerja1' };
   }
 }

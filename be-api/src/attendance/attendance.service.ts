@@ -1,10 +1,11 @@
+// src/attendance/attendance.service.ts
 import {
   Injectable,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus, UserRole } from '@prisma/client';
 
 @Injectable()
 export class AttendanceService {
@@ -13,7 +14,7 @@ export class AttendanceService {
   // =======================
   // CHECK IN
   // =======================
-  async checkin(userId: string, role: string, qrValue: string) {
+  async checkin(userId: string, role: UserRole, qrValue: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User tidak ditemukan');
@@ -23,7 +24,7 @@ export class AttendanceService {
       throw new ForbiddenException('QR Code tidak valid');
     }
 
-    if (role !== 'PEKERJA' && role !== 'KAPROG') {
+    if (role !== UserRole.PEKERJA && role !== UserRole.KAPROG) {
       throw new ForbiddenException('Role tidak boleh absen');
     }
 
@@ -48,6 +49,8 @@ export class AttendanceService {
         date: new Date(),
         timeIn: new Date(),
         status: AttendanceStatus.PRESENT,
+        qrValue,          // ✅ WAJIB diisi
+        role,             // ✅ enum UserRole dari Prisma
       },
       include: { user: true },
     });
@@ -56,7 +59,7 @@ export class AttendanceService {
   // =======================
   // CHECK OUT
   // =======================
-  async checkout(userId: string, role: string, qrValue: string) {
+  async checkout(userId: string, role: UserRole, qrValue: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User tidak ditemukan');
@@ -66,7 +69,7 @@ export class AttendanceService {
       throw new ForbiddenException('QR Code tidak valid');
     }
 
-    if (role !== 'PEKERJA' && role !== 'KAPROG') {
+    if (role !== UserRole.PEKERJA && role !== UserRole.KAPROG) {
       throw new ForbiddenException('Role tidak boleh absen');
     }
 

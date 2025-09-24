@@ -12,7 +12,7 @@ import {
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateAdminDto } from './dto/create-admin.dto';
-import { Role } from '@prisma/client';
+import { UserRole } from '@prisma/client'; // ✅ ganti Role → UserRole
 
 @Controller('users')
 @UseGuards(JwtAuthGuard) // semua endpoint butuh login
@@ -28,7 +28,7 @@ export class UsersController {
   // 🔹 bikin user baru (cek role dari JWT)
   @Post()
   create(@Body() data: CreateAdminDto, @Req() req: any) {
-    return this.usersService.create(data, req.user.role as Role);
+    return this.usersService.create(data, req.user.role as UserRole); // ✅ pakai UserRole
   }
 
   // 🔹 update user (opsional password)

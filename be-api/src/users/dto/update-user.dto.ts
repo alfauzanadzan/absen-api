@@ -1,20 +1,28 @@
-import { IsString, IsEmail, MinLength, IsEnum } from 'class-validator';
-import { Role } from '@prisma/client';
+import { IsOptional, IsString, IsEnum, IsEmail } from 'class-validator';
+import { UserRole } from '@prisma/client'; // ✅ benar
 
-export class CreateUserDto {
+export class UpdateUserDto {
+  @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
+  @IsOptional()
   @IsString()
-  name: string;   // 👈 wajib
+  name?: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(6)
-  password: string;
+  password?: string;
 
-  @IsEnum(Role)
-  role: Role;
+  @IsOptional()
+  @IsString()
+  position?: string;
+
+  @IsOptional()
+  @IsEnum(UserRole) // ✅ pakai UserRole
+  role?: UserRole;
 }

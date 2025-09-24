@@ -3,32 +3,42 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // atau mysql/sqlite sesuai DB kamu
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id         String       @id @default(uuid())
-  username   String       @unique
-  password   String
-  role       String
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-
+  id          String       @id @default(uuid())
+  username    String       @unique
+  email       String?      @unique
+  password    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  name        String?
+  position    String?
+  role        UserRole     @default(PEKERJA)
   attendances Attendance[]
 }
 
 model Attendance {
-  id        String            @id @default(uuid())
+  id        String           @id @default(uuid())
   userId    String
-  date      DateTime
+  date      DateTime         @default(now())
   timeIn    DateTime?
   timeOut   DateTime?
-  status    AttendanceStatus
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  qrValue   String           @unique
+  role      UserRole
+  status    AttendanceStatus @default(PRESENT)
+  user      User             @relation(fields: [userId], references: [id])
+}
 
-  user      User              @relation(fields: [userId], references: [id])
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  KAPROG
+  PEKERJA
 }
 
 enum AttendanceStatus {

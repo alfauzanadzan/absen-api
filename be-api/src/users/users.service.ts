@@ -2,7 +2,7 @@ import { Injectable, ForbiddenException, BadRequestException } from '@nestjs/com
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateAdminDto } from './dto/create-admin.dto';
-import { Role } from '@prisma/client'; // enum dari Prisma
+import { UserRole } from '@prisma/client'; // ✅ enum dari Prisma
 
 @Injectable()
 export class UsersService {
@@ -25,13 +25,13 @@ export class UsersService {
   }
 
   // ➕ Bikin user baru (role tergantung siapa yg buat)
-  async create(data: any, creatorRole: Role) {
+  async create(data: any, creatorRole: UserRole) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    if (creatorRole === Role.SUPER_ADMIN) {
-      // SUPER_ADMIN hanya boleh bikin ADMIN
-      if (data.role !== Role.ADMIN) {
-        throw new ForbiddenException('SUPER_ADMIN hanya bisa membuat ADMIN');
+    if (creatorRole === UserRole.SUPERADMIN) {
+      // SUPERADMIN hanya boleh bikin ADMIN
+      if (data.role !== UserRole.ADMIN) {
+        throw new ForbiddenException('SUPERADMIN hanya bisa membuat ADMIN');
       }
 
       return this.prisma.user.create({
@@ -40,20 +40,20 @@ export class UsersService {
           email: data.email,
           name: data.name,
           password: hashedPassword,
-          role: Role.ADMIN,
+          role: UserRole.ADMIN,
         },
       });
     }
 
-    if (creatorRole === Role.ADMIN) {
+    if (creatorRole === UserRole.ADMIN) {
       // ADMIN bisa bikin KAPROG / PEKERJA
-      if (![Role.KAPROG, Role.PEKERJA].includes(data.role)) {
+      if (![UserRole.KAPROG, UserRole.PEKERJA].includes(data.role)) {
         throw new ForbiddenException(
           'ADMIN hanya bisa membuat akun KAPROG atau PEKERJA',
         );
       }
 
-      if (data.role === Role.PEKERJA && !data.position) {
+      if (data.role === UserRole.PEKERJA && !data.position) {
         throw new BadRequestException('PEKERJA wajib memiliki position');
       }
 
@@ -64,7 +64,7 @@ export class UsersService {
           name: data.name,
           password: hashedPassword,
           role: data.role,
-          position: data.role === Role.PEKERJA ? data.position : null,
+          position: data.role === UserRole.PEKERJA ? data.position : null,
         },
       });
     }
@@ -103,10 +103,10 @@ export class UsersService {
 
   // 📊 Statistik jumlah user per role
   async getStats() {
-    const superAdmin = await this.prisma.user.count({ where: { role: Role.SUPER_ADMIN } });
-    const admin = await this.prisma.user.count({ where: { role: Role.ADMIN } });
-    const kaprog = await this.prisma.user.count({ where: { role: Role.KAPROG } });
-    const pekerja = await this.prisma.user.count({ where: { role: Role.PEKERJA } });
+    const superAdmin = await this.prisma.user.count({ where: { role: UserRole.SUPERADMIN } });
+    const admin = await this.prisma.user.count({ where: { role: UserRole.ADMIN } });
+    const kaprog = await this.prisma.user.count({ where: { role: UserRole.KAPROG } });
+    const pekerja = await this.prisma.user.count({ where: { role: UserRole.PEKERJA } });
 
     return { superAdmin, admin, kaprog, pekerja };
   }

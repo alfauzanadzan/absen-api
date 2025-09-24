@@ -1,24 +1,22 @@
-import { IsString, IsEmail, MinLength, IsOptional, IsEnum } from 'class-validator';
-import { Role } from '@prisma/client';
+import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
 
 export class CreateAdminDto {
   @IsString()
+  @IsNotEmpty()
   username: string;
 
   @IsEmail()
   email: string;
 
   @IsString()
-  name: string; // sesuai schema Prisma
+  @IsNotEmpty()
+  name: string;
 
   @IsString()
-  @MinLength(6)
+  @IsNotEmpty()
   password: string;
 
-  @IsEnum(Role)
-  role: Role; // 👈 biar cuma bisa SUPER_ADMIN, ADMIN, KAPROG, PEKERJA
-
-  @IsOptional()
   @IsString()
-  position?: string; // opsional (wajib kalau role = PEKERJA)
+  @IsNotEmpty()
+  position: string;
 }

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { ref } from "vue"
+import { useRouter } from "vue-router"
+import { useAuth } from "@/composables/useAuth"
+
 const username = ref("")
 const password = ref("")
 const loading = ref(false)
@@ -6,6 +10,7 @@ const loading = ref(false)
 const { login } = useAuth()
 const router = useRouter()
 
+// 🔹 Handle login
 const handleLogin = async () => {
   if (!username.value || !password.value) {
     alert("Username dan password wajib diisi")
@@ -19,24 +24,21 @@ const handleLogin = async () => {
   if (success) {
     const user = JSON.parse(localStorage.getItem("user")!)
 
-    // 🔹 Redirect sesuai role
-    if (user.role === "SUPER_ADMIN") {
-      router.push("/superadmin/super")
-    } else if (user.role === "ADMIN") {
-      router.push("/admin/admin")
-    } else if (user.role === "KAPROG") {
-      router.push("/kaprog/kaprog")
-    } else if (user.role === "PEKERJA") {
-      router.push("/pekerja/pekerja") // ✅ pekerja diarahkan ke dashboard pekerja
-    } else {
-      router.push("/") // fallback
+    // 🔹 Redirect sesuai role ke dashboard masing-masing
+    const roleRedirect: Record<string, string> = {
+      SUPERADMIN: "/superadmin/dashboard",
+      ADMIN: "/admin/dashboard",
+      KAPROG: "/kaprog/dashboard",
+      PEKERJA: "/pekerja/dashboard",
     }
+
+    router.push(roleRedirect[user.role] || "/")
   }
 }
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+  <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="bg-white p-8 rounded-2xl shadow-md w-80">
       <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
 
