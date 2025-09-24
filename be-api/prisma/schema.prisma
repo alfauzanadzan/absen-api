@@ -3,36 +3,46 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // atau mysql/sqlite sesuai DB kamu
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id         String       @id @default(uuid())
-  username   String       @unique
-  password   String
-  role       String
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-
-  attendances Attendance[]
-}
-
-model Attendance {
-  id        String            @id @default(uuid())
-  userId    String
-  date      DateTime
-  timeIn    DateTime?
-  timeOut   DateTime?
-  status    AttendanceStatus
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-
-  user      User              @relation(fields: [userId], references: [id])
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  KAPROG
+  PEKERJA
 }
 
 enum AttendanceStatus {
   PRESENT
   COMPLETED
   ABSENT
+}
+
+model User {
+  id         String       @id @default(uuid()) @db.Uuid
+  username   String       @unique
+  email      String?      @unique
+  password   String
+  role       Role         @default(PEKERJA)
+  name       String?      // kembalikan agar data tidak hilang
+  position   String?      // kembalikan agar data tidak hilang
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  attendances Attendance[]
+}
+
+
+model Attendance {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  date      DateTime         @default(now())
+  timeIn    DateTime?
+  timeOut   DateTime?
+  status    AttendanceStatus @default(PRESENT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
