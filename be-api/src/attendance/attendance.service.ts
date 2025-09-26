@@ -1,70 +1,98 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AttendanceStatus, UserRole } from '../common/types'; // ✅ fix import
+// src/attendance/attendance.service.ts
+import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common"
+import { PrismaService } from "../prisma/prisma.service"
+import { CheckinDto } from "./dto/checkin.dto"
+import { CheckOutDto } from "./dto/checkout.dto"
 
 @Injectable()
 export class AttendanceService {
   constructor(private prisma: PrismaService) {}
 
-  async checkin(userId: string, role: UserRole, qrValue: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User tidak ditemukan');
+  // =========================
+  // CHECK IN
+  // =========================
+  async checkin(dto: CheckinDto) {
+    // Cek user
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    })
+    if (!user) throw new NotFoundException("User tidak ditemukan")
 
-    if (qrValue !== 'ABSEN-PINTU-1') throw new ForbiddenException('QR Code tidak valid');
-
-    if (role !== 'PEKERJA' && role !== 'KAPROG') throw new ForbiddenException('Role tidak boleh absen');
-
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+    // Cek apakah sudah absen hari ini
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
     const existing = await this.prisma.attendance.findFirst({
-      where: { userId, date: { gte: startOfDay, lte: endOfDay } },
-    });
-    if (existing) throw new ForbiddenException('Kamu sudah check-in hari ini');
+      where: {
+        userId: dto.userId,
+        date: { gte: today },
+      },
+    })
 
+    if (existing) {
+      throw new BadRequestException("User sudah check-in hari ini")
+    }
+
+    // Simpan attendance
     return this.prisma.attendance.create({
       data: {
-        userId,
-        date: new Date(),
+        userId: dto.userId,
+        qrValue: dto.qrValue,
+        role: dto.role ?? "PEKERJA",
+        status: "PRESENT",
         timeIn: new Date(),
-        status: 'PRESENT',
-        qrValue,
-        role,
       },
-      include: { user: true },
-    });
+    })
   }
 
-  async checkout(userId: string, role: UserRole, qrValue: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User tidak ditemukan');
+  // =========================
+  // CHECK OUT
+  // =========================
+  async checkout(dto: CheckOutDto) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-    if (qrValue !== 'ABSEN-PINTU-1') throw new ForbiddenException('QR Code tidak valid');
+    const attendance = await this.prisma.attendance.findFirst({
+      where: {
+        userId: dto.userId,
+        date: { gte: today },
+      },
+    })
 
-    if (role !== 'PEKERJA' && role !== 'KAPROG') throw new ForbiddenException('Role tidak boleh absen');
+    if (!attendance) {
+      throw new NotFoundException("Belum ada check-in hari ini")
+    }
 
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-    const existing = await this.prisma.attendance.findFirst({
-      where: { userId, date: { gte: startOfDay, lte: endOfDay } },
-    });
-    if (!existing) throw new NotFoundException('Belum ada check-in hari ini');
-    if (existing.timeOut) throw new ForbiddenException('Kamu sudah check-out hari ini');
+    if (attendance.timeOut) {
+      throw new BadRequestException("User sudah checkout")
+    }
 
     return this.prisma.attendance.update({
-      where: { id: existing.id },
-      data: { timeOut: new Date(), status: 'COMPLETED' },
-      include: { user: true },
-    });
+      where: { id: attendance.id },
+      data: {
+        timeOut: new Date(),
+        status: "COMPLETED",
+      },
+    })
   }
 
+  // =========================
+  // GET ALL ATTENDANCE (untuk admin)
+  // =========================
   async findAll() {
     return this.prisma.attendance.findMany({
       include: { user: true },
-      orderBy: { createdAt: 'desc' },
-    });
+      orderBy: { createdAt: "desc" },
+    })
+  }
+
+  // =========================
+  // GET ATTENDANCE BY USER
+  // =========================
+  async findByUser(userId: string) {
+    return this.prisma.attendance.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    })
   }
 }

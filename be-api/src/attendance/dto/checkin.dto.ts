@@ -1,11 +1,11 @@
-// src/attendance/dto/checkin.dto.ts
-import { IsString } from 'class-validator';
+import { IsString, IsEnum } from 'class-validator';
 import { UserRole } from '../../common/types';
 
-export class CheckInDto {
+export class CheckinDto {
   @IsString()
   userId: string;
 
+ @IsEnum(UserRole)
   role: UserRole;
 
   @IsString()

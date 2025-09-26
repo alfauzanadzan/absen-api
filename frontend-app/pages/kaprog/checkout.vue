@@ -11,7 +11,7 @@ const updateClock = () => {
   time.value = now.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
+    second: "2-digit", // ✅ koma sudah benar
   })
 }
 
@@ -19,21 +19,20 @@ const updateClock = () => {
 const videoRef = ref<HTMLVideoElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const statusMessage = ref("")
-const mode = ref<"checkin" | "checkout" | null>(null)
+const mode = ref<"checkout">("checkout")
 
 let stream: MediaStream | null = null
 let animationId: number | null = null
 let barcodeDetector: any = null
 let jsQRFn: any = null
 let jsQRReady = false
-
-// debounce lock to prevent multiple posts for same code
 let processingLock = false
 
 onMounted(async () => {
   await loadUser()
   updateClock()
   clockInterval = window.setInterval(updateClock, 1000)
+  startScanner("checkout")
 })
 
 onBeforeUnmount(() => {
@@ -64,8 +63,7 @@ const loadJsQR = () =>
   })
 
 // start scanner
-const startScanner = async (type: "checkin" | "checkout") => {
-  mode.value = type
+const startScanner = async (type: "checkout") => {
   statusMessage.value = `Mode ${type.toUpperCase()} - Mengaktifkan kamera...`
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -113,15 +111,9 @@ const stopScanner = () => {
 // handle detected code
 const handleCode = async (raw: string) => {
   if (!raw) return
-  if (processingLock) {
-    console.debug("Skipping code due to lock:", raw)
-    return
-  }
+  if (processingLock) return
   processingLock = true
   try {
-    console.log("Detected code:", raw)
-
-    // QR bisa langsung userId, atau JSON
     let userId = raw
     try {
       const parsed = JSON.parse(raw)
@@ -130,14 +122,9 @@ const handleCode = async (raw: string) => {
       // not json
     }
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null
-    const endpoint =
-      mode.value === "checkout"
-        ? "http://localhost:3000/attendance/checkout"
-        : "http://localhost:3000/attendance/checkin"
+    const token = localStorage.getItem("token")
+    const endpoint = "http://localhost:3000/attendance/checkout"
 
-    console.log("Posting to", endpoint, "userId=", userId)
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -148,7 +135,7 @@ const handleCode = async (raw: string) => {
     })
 
     if (res.ok) {
-      statusMessage.value = `✅ Absen ${mode.value} berhasil untuk ${userId}`
+      statusMessage.value = `✅ Absen checkout berhasil untuk ${userId}`
     } else {
       const text = await res.text().catch(() => "")
       statusMessage.value = `❌ Gagal absen: ${res.status} ${text}`
@@ -229,25 +216,12 @@ const tick = async () => {
         </button>
       </div>
 
-      <div class="flex flex-col items-center mt-20">
-        <p class="text-8xl font-bold">{{ time }}</p>
-        <p class="mt-4 text-gray-600">Pilih mode check-in / check-out dan scan barcode</p>
+      <div class="flex flex-col items-center mt-10">
+        <p class="text-6xl font-bold">{{ time }}</p>
+        <p class="mt-4 text-gray-600">Arahkan QR ke kamera untuk Check Out</p>
 
-        <div class="flex gap-4 mt-8">
-          <router-link
-            to="/kaprog/checkin"
-            class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-          >
-            Check In (Scan)
-          </router-link>
-
-          <router-link
-            to="/kaprog/checkout"
-            class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
-          >
-            Check Out (Scan)
-          </router-link>
-        </div>
+        <video ref="videoRef" autoplay muted playsinline class="mt-8 rounded shadow"></video>
+        <canvas ref="canvasRef" class="hidden"></canvas>
 
         <p class="mt-4 text-gray-600">{{ statusMessage }}</p>
       </div>

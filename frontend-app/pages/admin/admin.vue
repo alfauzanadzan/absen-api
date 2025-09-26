@@ -103,22 +103,6 @@ const checkOut = async () => {
         <!-- Status (contoh statis, bisa ambil dari DB juga) -->
         <p class="mt-4 text-gray-600">You have not checked in today</p>
         <br>
-
-        <!-- Tombol aksi -->
-        <div class="flex gap-4 mt-6">
-          <button
-            @click="checkIn"
-            class="bg-blue-500 text-white font-semibold px-6 py-2 rounded hover:bg-blue-600 transition"
-          >
-            Check In
-          </button>
-          <button
-            @click="checkOut"
-            class="bg-red-600 text-white font-semibold px-6 py-2 rounded hover:bg-red-700 transition"
-          >
-            Check Out
-          </button>
-        </div>
       </div>
     </main>
   </div>
