@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../common/types'; // ✅ enum lokal
 
 @Injectable()
 export class AuthService {
@@ -12,7 +12,9 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 🔹 LOGIN
+  // =======================
+  // LOGIN
+  // =======================
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
@@ -44,82 +46,82 @@ export class AuthService {
     };
   }
 
-  // 🔹 SEED USER
+  // =======================
+  // SEED USER DEFAULT
+  // =======================
   async seedSuperAdmin() {
-    // ===== Super Admin =====
-    const superAdminPassword = await bcrypt.hash('superadmin123', 10);
+    const defaultPassword = await bcrypt.hash('123456', 10);
+
+    // superadmin
     await this.prisma.user.upsert({
       where: { username: 'superadmin' },
       update: {
-        password: superAdminPassword,
+        password: defaultPassword,
         role: UserRole.SUPERADMIN,
         name: 'Super Admin',
       },
       create: {
         username: 'superadmin',
-        password: superAdminPassword,
+        password: defaultPassword,
         role: UserRole.SUPERADMIN,
         email: 'superadmin@example.com',
         name: 'Super Admin',
       },
     });
 
-    // ===== Admin =====
-    const adminPassword = await bcrypt.hash('admin123', 10);
+    // admin
     await this.prisma.user.upsert({
       where: { username: 'admin1' },
       update: {
-        password: adminPassword,
+        password: defaultPassword,
         role: UserRole.ADMIN,
         name: 'Admin 1',
       },
       create: {
         username: 'admin1',
-        password: adminPassword,
+        password: defaultPassword,
         role: UserRole.ADMIN,
-        email: 'admin@example.com',
+        email: 'admin1@example.com', // ✅ beda email
         name: 'Admin 1',
       },
     });
 
-    // ===== Kaprog =====
-    const kaprogPassword = await bcrypt.hash('kaprog123', 10);
+    // kaprog
     await this.prisma.user.upsert({
       where: { username: 'kaprog' },
       update: {
-        password: kaprogPassword,
+        password: defaultPassword,
         role: UserRole.KAPROG,
         name: 'Kaprogram',
       },
       create: {
         username: 'kaprog',
-        password: kaprogPassword,
+        password: defaultPassword,
         role: UserRole.KAPROG,
-        email: 'kaprog@example.com',
+        email: 'kaprog@example.com', // ✅ beda email
         name: 'Kaprogram',
       },
     });
 
-    // ===== Pekerja =====
-    const pekerjaPassword = await bcrypt.hash('pekerja123', 10);
+    // pekerja
     await this.prisma.user.upsert({
       where: { username: 'pekerja1' },
       update: {
-        password: pekerjaPassword,
+        password: defaultPassword,
         role: UserRole.PEKERJA,
         name: 'Pekerja 1',
         position: 'Operator Mesin',
       },
       create: {
         username: 'pekerja1',
-        password: pekerjaPassword,
+        password: defaultPassword,
         role: UserRole.PEKERJA,
-        email: 'pekerja1@example.com',
+        email: 'pekerja1@example.com', // ✅ beda email
         name: 'Pekerja 1',
         position: 'Operator Mesin',
       },
     });
 
-    return { message: '✅ User seed berhasil: superadmin, admin1, kaprog, pekerja1' };
+    return { message: '✅ User seed berhasil (semua password = 123456)' };
   }
 }

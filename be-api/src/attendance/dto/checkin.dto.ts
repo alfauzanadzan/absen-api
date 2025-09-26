@@ -1,17 +1,13 @@
 // src/attendance/dto/checkin.dto.ts
-import { IsNotEmpty, IsEnum, IsString } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { IsString } from 'class-validator';
+import { UserRole } from '../../common/types';
 
-export class CheckinDto {
-  @IsNotEmpty()
+export class CheckInDto {
   @IsString()
   userId: string;
 
-  @IsNotEmpty()
-  @IsEnum(UserRole) // ✅ Validasi enum
   role: UserRole;
 
-  @IsNotEmpty()
   @IsString()
   qrValue: string;
 }

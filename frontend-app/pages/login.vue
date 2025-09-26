@@ -26,10 +26,10 @@ const handleLogin = async () => {
 
     // 🔹 Redirect sesuai role ke dashboard masing-masing
     const roleRedirect: Record<string, string> = {
-      SUPERADMIN: "/superadmin/dashboard",
-      ADMIN: "/admin/dashboard",
-      KAPROG: "/kaprog/dashboard",
-      PEKERJA: "/pekerja/dashboard",
+      SUPERADMIN: "/superadmin/super",
+      ADMIN: "/admin/admin",
+      KAPROG: "/kaprog/kaprog",
+      PEKERJA: "/pekerja/pekerja",
     }
 
     router.push(roleRedirect[user.role] || "/")

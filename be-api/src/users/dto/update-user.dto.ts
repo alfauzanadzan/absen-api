@@ -1,28 +1,7 @@
-import { IsOptional, IsString, IsEnum, IsEmail } from 'class-validator';
-import { UserRole } from '@prisma/client'; // ✅ benar
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateAdminDto } from './create-admin.dto';
+import { UserRole } from '../../common/types';
 
-export class UpdateUserDto {
-  @IsOptional()
-  @IsString()
-  username?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  password?: string;
-
-  @IsOptional()
-  @IsString()
-  position?: string;
-
-  @IsOptional()
-  @IsEnum(UserRole) // ✅ pakai UserRole
+export class UpdateUserDto extends PartialType(CreateAdminDto) {
   role?: UserRole;
 }

@@ -1,22 +1,25 @@
-import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, MinLength } from 'class-validator';
 
 export class CreateAdminDto {
   @IsString()
-  @IsNotEmpty()
   username: string;
 
-  @IsEmail()
-  email: string;
-
   @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @IsString()
-  @IsNotEmpty()
+  @MinLength(6)
   password: string;
 
   @IsString()
-  @IsNotEmpty()
-  position: string;
+  role: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  position?: string;
 }
