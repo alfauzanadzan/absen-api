@@ -184,11 +184,10 @@ const remove = async (acct: Account) => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex h-screen bg-white-100">
     <!-- SIDEBAR -->
     <aside class="w-60 bg-white p-6 flex flex-col">
       <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
-        SUPERADMIN
       </div>
       <nav class="flex flex-col space-y-2">
         <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
