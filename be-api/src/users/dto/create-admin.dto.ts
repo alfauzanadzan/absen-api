@@ -1,4 +1,5 @@
-import { IsString, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsEnum } from 'class-validator';
+import { UserRole } from '@prisma/client';
 
 export class CreateAdminDto {
   @IsString()
@@ -8,8 +9,8 @@ export class CreateAdminDto {
   @MinLength(6)
   password: string;
 
-  @IsString()
-  role: string;
+  @IsEnum(UserRole) // ✅ enum Prisma
+  role: UserRole;
 
   @IsOptional()
   @IsString()

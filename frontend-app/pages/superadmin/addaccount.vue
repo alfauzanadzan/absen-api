@@ -4,13 +4,39 @@ import { useAuth } from '@/composables/useAuth'
 
 definePageMeta({ middleware: ['role'] })
 
-type Role = 'ADMIN' | 'KAPROG' | 'PEGAWAI'
-type Account = { id: string; username: string; email: string; role: Role; name?: string }
+// ===== Types =====
+type Role = 'ADMIN' | 'KAPROG' | 'PEKERJA'
+type Department = { id: string; name: string }
+type Account = {
+  id: string
+  username: string
+  email: string
+  role: Role
+  name?: string
+  departmentId?: string
+  departmentName?: string
+  position?: string
+}
 
+// ===== State =====
 const accounts = ref<Account[]>([])
+const departments = ref<Department[]>([])
 const { user, loadUser } = useAuth()
+const q = ref('')
+const showModal = ref(false)
+const editing = ref<Account | null>(null)
 
-// 🔹 ambil data dari backend
+const form = reactive({
+  username: '',
+  name: '',
+  role: 'ADMIN' as Role,
+  password: '',
+  confirmPassword: '',
+  departmentId: '',
+  position: '',
+})
+
+// ===== Fetch Data =====
 const fetchAccounts = async () => {
   try {
     const res = await fetch('http://localhost:3000/users', {
@@ -22,23 +48,24 @@ const fetchAccounts = async () => {
   }
 }
 
+const fetchDepartments = async () => {
+  try {
+    const res = await fetch('http://localhost:3000/departments', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+    departments.value = await res.json()
+  } catch (err) {
+    console.error('Gagal ambil departemen:', err)
+  }
+}
+
 onMounted(() => {
   if (typeof window !== 'undefined') loadUser()
   fetchAccounts()
+  fetchDepartments()
 })
 
-const q = ref('')
-const showModal = ref(false)
-const editing = ref<Account | null>(null)
-
-const form = reactive({
-  username: '',
-  name: '',
-  role: 'ADMIN' as Role,
-  password: '',
-  confirmPassword: '',
-})
-
+// ===== Computed =====
 const filtered = computed(() =>
   accounts.value.filter(a =>
     !q.value ||
@@ -48,6 +75,7 @@ const filtered = computed(() =>
   )
 )
 
+// ===== Modal Handlers =====
 const openAdd = () => {
   editing.value = null
   form.username = ''
@@ -55,51 +83,84 @@ const openAdd = () => {
   form.role = 'ADMIN'
   form.password = ''
   form.confirmPassword = ''
+  form.departmentId = ''
+  form.position = ''
   showModal.value = true
 }
 
 const openEdit = (acct: Account) => {
+  if (acct.role === 'ADMIN' && acct.username === 'superadmin') {
+    alert('❌ Superadmin tidak bisa diedit!')
+    return
+  }
   editing.value = { ...acct }
   form.username = acct.username
   form.name = acct.name ?? ''
   form.role = acct.role
+  form.departmentId = acct.departmentId ?? ''
+  form.position = acct.position ?? ''
   form.password = ''
   form.confirmPassword = ''
   showModal.value = true
 }
 
+// ===== Save =====
 const save = async () => {
   try {
+    if (!editing.value && form.password !== form.confirmPassword) {
+      alert('❌ Password dan Konfirmasi tidak sama!')
+      return
+    }
+
+    const payload: any = {
+      username: form.username,
+      name: form.name,
+      role: form.role,
+    }
+
+    if (form.role === 'KAPROG') {
+      if (!form.departmentId) {
+        alert('❌ Departemen wajib dipilih untuk Kaprog!')
+        return
+      }
+      payload.departmentId = form.departmentId
+    }
+    if (form.role === 'PEKERJA') {
+      if (!form.position) {
+        alert('❌ Position wajib diisi untuk Pekerja!')
+        return
+      }
+      payload.position = form.position
+      if (!form.departmentId) {
+        alert('❌ Departemen wajib dipilih untuk Pekerja!')
+        return
+      }
+      payload.departmentId = form.departmentId
+    }
+
     if (editing.value) {
-      // 🔹 update user
       await fetch(`http://localhost:3000/users/${editing.value.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({
-          username: form.username,
-          name: form.name,
-          role: form.role,
-        }),
+        body: JSON.stringify(payload),
       })
     } else {
       await fetch('http://localhost:3000/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+          Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({
-          username: form.username,
-          name: form.name,
+          ...payload,
           email: `${form.username}@mail.com`,
           password: form.password,
-          role: form.role,
         }),
       })
     }
+
     await fetchAccounts()
     showModal.value = false
   } catch (err) {
@@ -107,10 +168,11 @@ const save = async () => {
   }
 }
 
-const remove = async (id: string) => {
+// ===== Hapus =====
+const remove = async (acct: Account) => {
   if (!confirm('Yakin hapus akun ini?')) return
   try {
-    await fetch(`http://localhost:3000/users/${id}`, {
+    await fetch(`http://localhost:3000/users/${acct.id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
@@ -122,11 +184,11 @@ const remove = async (id: string) => {
 </script>
 
 <template>
-  <!-- template sama persis kayak punya lu -->
   <div class="flex h-screen bg-gray-100">
     <!-- SIDEBAR -->
-    <aside class="w-60 bg-white  p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
+    <aside class="w-60 bg-white p-6 flex flex-col">
+      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
+        SUPERADMIN
       </div>
       <nav class="flex flex-col space-y-2">
         <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
@@ -141,7 +203,7 @@ const remove = async (id: string) => {
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-extrabold">
-            SUPERADMIN, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
+            Halo, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
           </h1>
           <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'ADMIN' }}</p>
         </div>
@@ -172,6 +234,8 @@ const remove = async (id: string) => {
               <th class="text-left p-4">Nama Lengkap</th>
               <th class="text-left p-4">Email</th>
               <th class="text-left p-4">Role</th>
+              <th class="text-left p-4">Departemen</th>
+              <th class="text-left p-4">Position</th>
               <th class="text-right p-4">Actions</th>
             </tr>
           </thead>
@@ -181,16 +245,22 @@ const remove = async (id: string) => {
               <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4">{{ acct.email }}</td>
               <td class="p-4">{{ acct.role }}</td>
+              <td class="p-4">{{ acct.departmentName ?? '-' }}</td>
+              <td class="p-4">{{ acct.position ?? '-' }}</td>
               <td class="p-4 text-right">
                 <div class="inline-flex gap-2">
+                  <!-- tombol edit muncul semua kecuali superadmin -->
                   <button
+                    v-if="!(acct.role === 'ADMIN' && acct.username === 'superadmin')"
                     @click="openEdit(acct)"
                     class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     Edit
                   </button>
+                  <!-- tombol hapus hilang kalau superadmin -->
                   <button
-                    @click="remove(acct.id)"
+                    v-if="!(acct.role === 'ADMIN' && acct.username === 'superadmin')"
+                    @click="remove(acct)"
                     class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                   >
                     Hapus
@@ -199,7 +269,7 @@ const remove = async (id: string) => {
               </td>
             </tr>
             <tr v-if="filtered.length === 0">
-              <td colspan="5" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
+              <td colspan="7" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
             </tr>
           </tbody>
         </table>
@@ -226,8 +296,29 @@ const remove = async (id: string) => {
               <label class="block text-sm text-gray-600 mb-1">Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded">
                 <option value="ADMIN">ADMIN</option>
+                <option value="KAPROG">KAPROG</option>
+                <option value="PEKERJA">PEKERJA</option>
               </select>
             </div>
+
+            <!-- Departemen untuk Kaprog & Pekerja -->
+            <div v-if="form.role === 'KAPROG' || form.role === 'PEKERJA'">
+              <label class="block text-sm text-gray-600 mb-1">Departemen</label>
+              <select v-model="form.departmentId" class="w-full p-2 border rounded" required>
+                <option disabled value="">-- Pilih Departemen --</option>
+                <option v-for="d in departments" :key="d.id" :value="d.id">
+                  {{ d.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Position untuk Pekerja -->
+            <div v-if="form.role === 'PEKERJA'">
+              <label class="block text-sm text-gray-600 mb-1">Position</label>
+              <input v-model="form.position" class="w-full p-2 border rounded" required />
+            </div>
+
+            <!-- Password hanya saat tambah -->
             <div v-if="!editing">
               <label class="block text-sm text-gray-600 mb-1">Password</label>
               <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
@@ -236,6 +327,7 @@ const remove = async (id: string) => {
               <label class="block text-sm text-gray-600 mb-1">Konfirmasi Password</label>
               <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />
             </div>
+
             <div class="flex justify-end gap-2 pt-2">
               <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
               <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
