@@ -16,6 +16,7 @@
     "file-saver": "^2.0.5",
     "html5-qrcode": "^2.3.8",
     "nuxt": "^4.1.1",
+    "qr-scanner": "^1.4.2",
     "qrcode.vue": "^3.6.0",
     "typescript": "^5.9.2",
     "vue": "^3.5.20",
