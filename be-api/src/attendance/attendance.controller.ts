@@ -1,34 +1,21 @@
 // src/attendance/attendance.controller.ts
-import { Controller, Post, Body, Get } from '@nestjs/common';
-import { AttendanceService } from './attendance.service';
-import { CheckinDto } from './dto/checkin.dto';
-import { CheckoutDto } from './dto/checkout.dto';
+import { Controller, Post, Body, Get, UseGuards } from "@nestjs/common"
+import { AttendanceService } from "./attendance.service"
+import { CheckinDto } from "./dto/checkin.dto"
+import { JwtAuthGuard } from "../auth/jwt-auth.guard"
 
-@Controller('attendance')
+@Controller("attendance")
+@UseGuards(JwtAuthGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  // =======================
-  // CHECK IN
-  // =======================
-  @Post('checkin')
-  async checkin(@Body() data: CheckinDto) {
-    return this.attendanceService.checkin(data.userId, data.role, data.qrValue);
+  @Post("checkin")
+  checkin(@Body() dto: CheckinDto) {
+    return this.attendanceService.checkin(dto)
   }
 
-  // =======================
-  // CHECK OUT
-  // =======================
-  @Post('checkout')
-  async checkout(@Body() data: CheckoutDto) {
-    return this.attendanceService.checkout(data.userId, data.role, data.qrValue);
-  }
-
-  // =======================
-  // GET ALL
-  // =======================
   @Get()
-  async findAll() {
-    return this.attendanceService.findAll();
+  findAll() {
+    return this.attendanceService.findAll()
   }
 }

@@ -1,12 +1,11 @@
-import { IsString, IsUUID, IsIn } from 'class-validator';
+import { IsString } from 'class-validator';
+import { UserRole } from '../../common/types';
 
-export class CheckoutDto {
-  @IsUUID()
+export class CheckOutDto {   // ⬅️ tetap CheckOutDto (huruf O besar)
+  @IsString()
   userId: string;
 
-  @IsString()
-  @IsIn(['PEKERJA', 'KAPROG'])
-  role: string;
+  role: UserRole;
 
   @IsString()
   qrValue: string;

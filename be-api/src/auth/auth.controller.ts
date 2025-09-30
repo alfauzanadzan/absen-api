@@ -6,8 +6,15 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 🔹 LOGIN
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  // 🔹 SEED SUPERADMIN, ADMIN, KAPROG, PEKERJA
+  @Post('seed')
+  async seed() {
+    return this.authService.seedSuperAdmin();
   }
 }

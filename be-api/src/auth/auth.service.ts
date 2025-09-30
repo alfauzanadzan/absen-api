@@ -1,9 +1,9 @@
-// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { UserRole } from '../common/types'; // ✅ enum lokal
 
 @Injectable()
 export class AuthService {
@@ -12,7 +12,9 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 🔹 LOGIN
+  // =======================
+  // LOGIN
+  // =======================
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
@@ -20,12 +22,14 @@ export class AuthService {
       where: { username },
     });
 
-    if (!user)
+    if (!user) {
       throw new UnauthorizedException('Login gagal, periksa username/password');
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid)
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Login gagal, periksa username/password');
+    }
 
     const payload = { sub: user.id, username: user.username, role: user.role };
 
@@ -37,91 +41,87 @@ export class AuthService {
         role: user.role,
         email: user.email,
         name: user.name,
-        position: user.position, // buat pekerja
+        position: user.position,
       },
     };
   }
 
-  // 🔹 SEED SEMUA USER (SUPERADMIN, ADMIN, KAPROG, PEKERJA)
+  // =======================
+  // SEED USER DEFAULT
+  // =======================
   async seedSuperAdmin() {
-    // ===== Super Admin =====
-    const superAdminPassword = await bcrypt.hash('superadmin123', 10);
+    const defaultPassword = await bcrypt.hash('123456', 10);
+
+    // superadmin
     await this.prisma.user.upsert({
       where: { username: 'superadmin' },
       update: {
-        password: superAdminPassword,
-        role: 'SUPER_ADMIN',
+        password: defaultPassword,
+        role: UserRole.SUPERADMIN,
         name: 'Super Admin',
       },
       create: {
         username: 'superadmin',
-        password: superAdminPassword,
-        role: 'SUPER_ADMIN',
+        password: defaultPassword,
+        role: UserRole.SUPERADMIN,
         email: 'superadmin@example.com',
         name: 'Super Admin',
       },
     });
-    console.log(
-      '⚡ Super Admin siap (username: superadmin, password: superadmin123)',
-    );
 
-    // ===== Admin =====
-    const adminPassword = await bcrypt.hash('admin123', 10);
+    // admin
     await this.prisma.user.upsert({
       where: { username: 'admin1' },
       update: {
-        password: adminPassword,
-        role: 'ADMIN',
+        password: defaultPassword,
+        role: UserRole.ADMIN,
         name: 'Admin 1',
       },
       create: {
         username: 'admin1',
-        password: adminPassword,
-        role: 'ADMIN',
-        email: 'admin@example.com',
+        password: defaultPassword,
+        role: UserRole.ADMIN,
+        email: 'admin1@example.com', // ✅ beda email
         name: 'Admin 1',
       },
     });
-    console.log('⚡ Admin (admin1) siap (password: admin123)');
 
-    // ===== Kaprog =====
-    const kaprogPassword = await bcrypt.hash('kaprog123', 10);
+    // kaprog
     await this.prisma.user.upsert({
       where: { username: 'kaprog' },
       update: {
-        password: kaprogPassword,
-        role: 'KAPROG',
+        password: defaultPassword,
+        role: UserRole.KAPROG,
         name: 'Kaprogram',
       },
       create: {
         username: 'kaprog',
-        password: kaprogPassword,
-        role: 'KAPROG',
-        email: 'kaprog@example.com',
+        password: defaultPassword,
+        role: UserRole.KAPROG,
+        email: 'kaprog@example.com', // ✅ beda email
         name: 'Kaprogram',
       },
     });
-    console.log('⚡ Kaprog (kaprog) siap (password: kaprog123)');
 
-    // ===== Pekerja =====
-    const pekerjaPassword = await bcrypt.hash('pekerja123', 10);
+    // pekerja
     await this.prisma.user.upsert({
       where: { username: 'pekerja1' },
       update: {
-        password: pekerjaPassword,
-        role: 'PEKERJA',
+        password: defaultPassword,
+        role: UserRole.PEKERJA,
         name: 'Pekerja 1',
         position: 'Operator Mesin',
       },
       create: {
         username: 'pekerja1',
-        password: pekerjaPassword,
-        role: 'PEKERJA',
-        email: 'pekerja1@example.com',
+        password: defaultPassword,
+        role: UserRole.PEKERJA,
+        email: 'pekerja1@example.com', // ✅ beda email
         name: 'Pekerja 1',
         position: 'Operator Mesin',
       },
     });
-    console.log('⚡ Pekerja (pekerja1) siap (password: pekerja123)');
+
+    return { message: '✅ User seed berhasil (semua password = 123456)' };
   }
 }

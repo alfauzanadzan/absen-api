@@ -6,13 +6,12 @@ definePageMeta({ middleware: ['role'] })
 
 type Role = 'KAPROG' | 'PEKERJA'
 type Account = { 
-  id: number
+  id: string
   name: string
   username: string
   email: string
   position?: string
   role: Role
-  avatar?: string
 }
 
 const accounts = ref<Account[]>([])
@@ -49,7 +48,6 @@ const form = reactive({
   role: 'PEKERJA' as Role,
   password: '',
   confirmPassword: '',
-  avatarPreview: ''
 })
 
 const filtered = computed(() =>
@@ -71,7 +69,6 @@ const openAdd = () => {
   form.role = 'PEKERJA'
   form.password = ''
   form.confirmPassword = ''
-  form.avatarPreview = ''
   showModal.value = true
 }
 
@@ -81,7 +78,6 @@ const openEdit = (acct: Account) => {
   form.username = acct.username
   form.position = acct.position ?? ''
   form.role = acct.role
-  form.avatarPreview = acct.avatar ?? ''
   form.password = ''
   form.confirmPassword = ''
   showModal.value = true
@@ -108,8 +104,7 @@ const save = async () => {
           password: form.password,
           name: form.name,
           position: form.position,
-          avatar: form.avatarPreview,
-        }),
+        }), // ❌ avatar tidak dikirim
       })
 
       if (!res.ok) throw new Error('Gagal tambah akun')
@@ -133,8 +128,7 @@ const save = async () => {
           role: form.role,
           name: form.name,
           position: form.position,
-          avatar: form.avatarPreview,
-        }),
+        }), // ❌ avatar tidak dikirim
       })
       if (!res.ok) throw new Error('Gagal update akun')
       await fetchAccounts()
@@ -147,7 +141,7 @@ const save = async () => {
 }
 
 // ✅ Hapus akun
-const remove = async (id: number) => {
+const remove = async (id: string) => {
   if (!confirm('Yakin hapus akun ini?')) return
   try {
     const res = await fetch(`http://localhost:3000/users/${id}`, {
@@ -161,19 +155,13 @@ const remove = async (id: number) => {
     alert('Error hapus akun')
   }
 }
-
-const setAvatarPreview = (e: Event) => {
-  const v = (e.target as HTMLInputElement).value
-  form.avatarPreview = v
-}
 </script>
 
 <template>
   <div class="flex h-screen bg-white-100">
     <!-- SIDEBAR -->
     <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-      </div>
+      <div class="flex items-center justify-center h-20 mb-6"></div>
       <nav class="flex flex-col space-y-2">
         <a href="/admin/admin" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
         <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-200">Profile</a>
@@ -240,7 +228,7 @@ const setAvatarPreview = (e: Event) => {
           <tbody>
             <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
               <td class="p-4">
-                <img :src="acct.avatar || 'https://i.pravatar.cc/80'" alt="" class="w-12 h-12 rounded-full object-cover border" />
+                <img :src="`https://i.pravatar.cc/80?u=${acct.username}`" alt="" class="w-12 h-12 rounded-full object-cover border" />
               </td>
               <td class="p-4 font-medium text-gray-800">{{ acct.name }}</td>
               <td class="p-4 text-gray-600">{{ acct.username }}</td>
@@ -297,10 +285,6 @@ const setAvatarPreview = (e: Event) => {
                 <option value="KAPROG">KAPROG</option>
                 <option value="PEKERJA">PEKERJA</option>
               </select>
-            </div>
-            <div>
-              <label class="block text-sm text-gray-600 mb-1">Avatar URL (opsional)</label>
-              <input v-model="form.avatarPreview" @input="setAvatarPreview" class="w-full p-2 border rounded" placeholder="https://..." />
             </div>
             <div v-if="!editing">
               <label class="block text-sm text-gray-600 mb-1">Password</label>

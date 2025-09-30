@@ -84,10 +84,10 @@ const handleDecodedRaw = async (raw: string) => {
 
   // Payload sesuai DTO
   const payload = {
-  userId: String(user.value.id),
-  role: String(user.value.role), // penting
-  qrValue: String(raw),
-}
+    userId: String(user.value.id),
+    role: String(user.value.role), // otomatis dari login pekerja
+    qrValue: String(raw),
+  }
 
   console.log("Payload dikirim ke backend:", JSON.stringify(payload))
 
@@ -164,15 +164,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar -->
+    <!-- Sidebar khusus PEKERJA -->
     <aside class="w-60 bg-white p-6 border-r">
       <div class="flex items-center justify-center h-20 mb-6">
-        <div class="text-lg font-bold">KAPROG</div>
+        <div class="text-lg font-bold">PEKERJA</div>
       </div>
       <nav class="flex flex-col space-y-2">
-        <NuxtLink to="/kaprog/kaprog" class="p-2 rounded hover:bg-gray-100">Dashboard</NuxtLink>
-        <NuxtLink to="/kaprog/checkin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Check-in</NuxtLink>
-        <NuxtLink to="/kaprog/checkout" class="p-2 rounded hover:bg-gray-100">Check-out</NuxtLink>
+        <NuxtLink to="/pekerja/pekerja" class="p-2 rounded hover:bg-gray-100">Dashboard</NuxtLink>
+        <NuxtLink to="/pekerja/checkin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Check-in</NuxtLink>
+        <NuxtLink to="/pekerja/checkout" class="p-2 rounded hover:bg-gray-100">Check-out</NuxtLink>
+        <NuxtLink to="/pekerja/profil" class="p-2 rounded hover:bg-gray-100">Profile</NuxtLink>
       </nav>
     </aside>
 
@@ -181,12 +182,12 @@ onBeforeUnmount(() => {
       <div class="w-full max-w-2xl">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h1 class="text-2xl font-bold">Scan QR Absen Kaprog</h1>
-            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code karyawan</p>
+            <h1 class="text-2xl font-bold">Scan QR Absen Pekerja</h1>
+            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code untuk absen</p>
           </div>
           <div class="text-right">
             <div class="text-3xl font-bold">{{ time }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ user?.username ?? "KAPROG" }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ user?.username ?? "PEKERJA" }}</div>
           </div>
         </div>
 

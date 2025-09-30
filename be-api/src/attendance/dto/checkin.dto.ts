@@ -1,12 +1,12 @@
-import { IsString, IsUUID, IsIn } from 'class-validator';
+import { IsString, IsEnum } from 'class-validator';
+import { UserRole } from '../../common/types';
 
 export class CheckinDto {
-  @IsUUID()
+  @IsString()
   userId: string;
 
-  @IsString()
-  @IsIn(['PEKERJA', 'KAPROG'])
-  role: string;
+ @IsEnum(UserRole)
+  role: UserRole;
 
   @IsString()
   qrValue: string;

@@ -1,20 +1,7 @@
-import { IsString, IsEmail, MinLength, IsEnum } from 'class-validator';
-import { Role } from '@prisma/client';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateAdminDto } from './create-admin.dto';
+import { UserRole } from '../../common/types';
 
-export class CreateUserDto {
-  @IsString()
-  username: string;
-
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  name: string;   // 👈 wajib
-
-  @IsString()
-  @MinLength(6)
-  password: string;
-
-  @IsEnum(Role)
-  role: Role;
+export class UpdateUserDto extends PartialType(CreateAdminDto) {
+  role?: UserRole;
 }

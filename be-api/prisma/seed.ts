@@ -1,81 +1,76 @@
-// prisma/seed.ts
-// Script seed yang ditulis agar lebih tahan terhadap mismatch tipe yang sering muncul
-// - Menggunakan `username` sebagai unique key di `where` (lebih aman jika `email` tidak di-set unique di generated types)
-// - Meng-cast payload ke `any` untuk menghindari error TypeScript di environment yang client-nya belum digenerate
-// Pastikan: jalankan `npx prisma generate` sebelum menjalankan seed ini.
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
-import { PrismaClient } from "@prisma/client"
-import * as bcrypt from "bcrypt"
-
-const prisma = new PrismaClient()
-
-async function upsertUser(opts: {
-  username: string
-  email?: string
-  name?: string
-  position?: string
-  role: string
-  passwordPlain: string
-}) {
-  const { username, email, name, position, role, passwordPlain } = opts
-  const password = await bcrypt.hash(passwordPlain, 10)
-
-  return prisma.user.upsert({
-    where: { username },
-    // cast ke any supaya script ini tetap compile walau generated types belum sinkron
-    update: ({
-      password,
-      role,
-      ...(name ? { name } : {}),
-      ...(position ? { position } : {}),
-      ...(email ? { email } : {}),
-    } as any),
-    create: ({
-      username,
-      email,
-      name,
-      position,
-      password,
-      role,
-    } as any),
-  })
-}
+const prisma = new PrismaClient();
 
 async function main() {
-  await upsertUser({
-    username: "superadmin",
-    email: "superadmin@example.com",
-    name: "Super Admin",
-    role: "SUPER_ADMIN",
-    passwordPlain: "superadmin123",
-  })
-  console.log("⚡ Super Admin password direset ke superadmin123")
+  const hashedPassword = await bcrypt.hash('password123', 10);
 
-  await upsertUser({
-    username: "admin",
-    email: "admin@example.com",
-    name: "Admin Satu",
-    role: "ADMIN",
-    passwordPlain: "admin123",
-  })
-  console.log("⚡ Admin password direset ke admin123")
+  // Super Admin
+  await prisma.user.upsert({
+    where: { email: 'superadmin@example.com' },
+    update: { name: 'Super Admin' },
+    create: {
+      username: 'superadmin',
+      email: 'superadmin@example.com',
+      password: hashedPassword,
+      name: 'Super Admin',
+      position: 'System Owner',
+      role: "SUPERADMIN",   // ✅ string
+    },
+  });
 
-  await upsertUser({
-    username: "kaprog",
-    email: "kaprog@example.com",
-    name: "Kaprogram A",
-    position: "Kepala Program",
-    role: "KAPROG",
-    passwordPlain: "kaprog123",
-  })
-  console.log("⚡ Kaprog password direset ke kaprog123")
+  // Admin
+  await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: { name: 'Admin Satu' },
+    create: {
+      username: 'admin',
+      email: 'admin@example.com',
+      password: hashedPassword,
+      name: 'Admin Satu',
+      position: 'Admin Umum',
+      role: "ADMIN",   // ✅ string
+    },
+  });
+
+  // Kaprog
+  await prisma.user.upsert({
+    where: { email: 'kaprog@example.com' },
+    update: { name: 'Kaprogram A' },
+    create: {
+      username: 'kaprog',
+      email: 'kaprog@example.com',
+      password: hashedPassword,
+      name: 'Kaprogram A',
+      position: 'Kepala Program',
+      role: "KAPROG",   // ✅ string
+    },
+  });
+
+  // Pekerja
+  await prisma.user.upsert({
+    where: { email: 'pekerja@example.com' },
+    update: { name: 'Pekerja 1' },
+    create: {
+      username: 'pekerja',
+      email: 'pekerja@example.com',
+      password: hashedPassword,
+      name: 'Pekerja 1',
+      position: 'Staff Produksi',
+      role: "PEKERJA",   // ✅ string
+    },
+  });
 }
 
 main()
+  .then(() => {
+    console.log('✅ Database seeded successfully');
+  })
   .catch((e) => {
-    console.error("❌ Error saat seed:", e)
-    process.exit(1)
+    console.error('❌ Error seeding database:', e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });
