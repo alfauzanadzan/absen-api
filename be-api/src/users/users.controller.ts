@@ -1,52 +1,47 @@
 import {
-  Body,
   Controller,
   Get,
   Post,
-  Put,
-  Delete,
+  Body,
   Param,
+  Delete,
+  Put,
   UseGuards,
   Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateAdminDto } from './dto/create-admin.dto';
-import { UserRole } from '../common/types';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../auth/roles.enum';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard) // ✅ semua endpoint butuh login
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // 🔹 ambil semua user
   @Get()
   async findAll() {
     return this.usersService.findAll();
   }
 
-  // 🔹 bikin user baru (role creator diambil dari JWT)
   @Post()
-  async create(@Body() data: CreateAdminDto, @Req() req: any) {
-    const creatorRole = req.user.role as UserRole; // ✅ ambil dari payload JWT
-    return this.usersService.create(data, creatorRole);
+  @Roles(Role.SUPERADMIN, Role.ADMIN) // ✅ hanya superadmin & admin bisa tambah akun
+  async create(@Body() data: CreateUserDto, @Req() req: any) {
+    return this.usersService.createUser(data, req.user);
   }
 
-  // 🔹 update user (opsional password)
   @Put(':id')
-  async update(@Param('id') id: string, @Body() data: Partial<CreateAdminDto>) {
-    return this.usersService.update(id, data);
+  @Roles(Role.SUPERADMIN, Role.ADMIN)
+  async update(@Param('id') id: string, @Body() data: Partial<CreateUserDto>, @Req() req: any) {
+    return this.usersService.updateUser(id, data, req.user);
   }
 
-  // 🔹 hapus user
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
-  }
-
-  // 🔹 statistik jumlah user per role (buat dashboard superadmin)
-  @Get('stats')
-  async getStats() {
-    return this.usersService.getStats();
+  @Roles(Role.SUPERADMIN, Role.ADMIN)
+  async remove(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.removeUser(id, req.user);
   }
 }

@@ -36,7 +36,7 @@ onBeforeUnmount(() => {
 
 // --- Navigasi ke halaman scan ---
 const goCheckIn = () => {
-  navigateTo("/pekerja/checkin")
+  navigateTo("/pekerja/checkin1")
 }
 
 const goCheckOut = () => {
