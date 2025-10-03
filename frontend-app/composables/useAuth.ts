@@ -2,7 +2,7 @@
 export type Role = "SUPERADMIN" | "ADMIN" | "KAPROG" | "PEKERJA"
 
 export type User = {
-  id?: number
+  id?: string
   username: string
   role: Role
   departmentName?: string
@@ -24,33 +24,26 @@ export const useAuth = () => {
 
   const isClient = () => typeof window !== "undefined"
 
-  // 🔥 Detect department hanya untuk KAPROG
+  // =======================
+  // DETECT DEPARTMENT
+  // =======================
   const detectDepartment = (user: User): string => {
-    console.log('🔍 Detecting department for user:', user)
+    if (user.role !== "KAPROG" && user.role !== "PEKERJA") return ""
 
-    if (user.role !== 'KAPROG') return ''
-
-    // Priority 1: Gunakan departmentName jika ada
     if (user.departmentName?.trim()) return user.departmentName.trim()
 
-    // Priority 2: Detect dari username
-    const username = user.username.toLowerCase()
-    if (username.includes('marketing') || username.includes('mkt') || username.includes('mia')) return 'Marketing'
-    if (username.includes('it') || username.includes('tech') || username.includes('hizam')) return 'IT'
+    const uname = user.username.toLowerCase()
+    const email = user.email?.toLowerCase() || ""
 
-    // Priority 3: Detect dari email
-    const email = user.email?.toLowerCase() || ''
-    if (email.includes('marketing') || email.includes('mkt') || email.includes('almia')) return 'Marketing'
-    if (email.includes('it') || email.includes('tech') || email.includes('alhizam')) return 'IT'
+    if (uname.includes("marketing") || uname.includes("mkt") || uname.includes("mia") || email.includes("marketing") || email.includes("mkt") || email.includes("almia")) return "Marketing"
+    if (uname.includes("it") || uname.includes("tech") || uname.includes("hizam") || email.includes("it") || email.includes("tech") || email.includes("alhizam")) return "IT"
 
-    // Hardcode untuk username tertentu
-    if (username === 'mia' || username === 'almia') return 'Marketing'
-    if (username === 'alhizam') return 'IT'
-
-    console.warn('❓ Cannot detect department for KAPROG:', user)
-    return 'IT' // fallback
+    return "IT" // fallback
   }
 
+  // =======================
+  // LOGIN
+  // =======================
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const res = await $fetch<LoginResponse>(`${config.public.apiBase}/auth/login`, {
@@ -59,22 +52,17 @@ export const useAuth = () => {
         body: { username, password },
       })
 
-      if (!res || !res.user) {
-        alert("Login gagal — user/role tidak ditemukan pada response.")
-        return false
-      }
+      if (!res || !res.user) throw new Error("Login gagal — user tidak ditemukan.")
 
-      // 🔥 Tambahkan departmentName hanya untuk KAPROG
+      // attach departmentName jika role KAPROG / PEKERJA
       const userData: User = {
         ...res.user,
-        departmentName: res.user.role === 'KAPROG'
+        departmentName: (res.user.role === "KAPROG" || res.user.role === "PEKERJA")
           ? (res.user.departmentName?.trim() || detectDepartment(res.user))
-          : undefined
+          : undefined,
       }
 
-      console.log('✅ Final user data:', userData)
-
-      // Simpan ke localStorage
+      // simpan ke localStorage
       if (isClient()) {
         if (res.access_token) localStorage.setItem("token", res.access_token)
         localStorage.setItem("user", JSON.stringify(userData))
@@ -82,40 +70,43 @@ export const useAuth = () => {
 
       user.value = userData
 
-      // Redirect
+      // redirect sesuai role & department
       if (isClient()) {
         const redirectPath = getRedirectPath(userData)
-        console.log('🔄 Redirecting to:', redirectPath)
         await router.push(redirectPath)
       }
 
       return true
     } catch (err: any) {
       console.error("Login error:", err)
-      alert(err?.data?.message || "Login gagal, periksa username & password")
+      alert(err?.data?.message || err.message || "Login gagal, periksa username & password")
       return false
     }
   }
 
-  // 🔥 Redirect logic
+  // =======================
+  // REDIRECT PATH
+  // =======================
   const getRedirectPath = (user: User): string => {
-    console.log('🔍 User data for redirect:', user)
     const role = user.role
-    const department = user.departmentName?.toLowerCase().trim()
+    const dept = user.departmentName?.toLowerCase().trim()
 
     switch (role) {
-      case 'SUPERADMIN': return '/superadmin/super'
-      case 'ADMIN': return '/admin/admin'
-      case 'KAPROG':
-        if (department === 'marketing') return '/kaprog-marketing'
-        return '/kaprog-it'
-      case 'PEKERJA': return '/pekerja/dashboard'
-      default:
-        console.warn('❓ Unknown role, redirecting to home')
-        return '/'
+      case "SUPERADMIN": return "/superadmin/super"
+      case "ADMIN": return "/admin/admin"
+      case "KAPROG":
+        if (dept === "marketing") return "/kaprog-marketing"
+        return "/kaprog-it"
+      case "PEKERJA":
+        if (dept === "marketing") return "/pekerja-marketing"
+        return "/pekerja-it"
+      default: return "/"
     }
   }
 
+  // =======================
+  // LOGOUT
+  // =======================
   const logout = () => {
     if (isClient()) {
       localStorage.removeItem("token")
@@ -125,22 +116,23 @@ export const useAuth = () => {
     user.value = null
   }
 
+  // =======================
+  // LOAD USER DARI LOCALSTORAGE
+  // =======================
   const loadUser = async () => {
     if (!isClient()) return
     const raw = localStorage.getItem("user")
     if (raw) {
       try { user.value = JSON.parse(raw) as User } 
       catch { user.value = null }
-    } else {
-      user.value = null
-    }
+    } else user.value = null
   }
 
   return {
     user,
-    loadUser,
     login,
     logout,
+    loadUser,
     getRedirectPath,
     detectDepartment
   }
