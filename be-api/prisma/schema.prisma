@@ -47,23 +47,25 @@ model User {
 }
 
 model Attendance {
-  id           String           @id @default(uuid())
-  userId       String
-  departmentId String?
-  date         DateTime         @default(now())
-  timeIn       DateTime?
-  timeOut      DateTime?
-  qrValue      String           @unique
-  role         UserRole         @default(PEKERJA)
-  status       AttendanceStatus @default(PRESENT)
+  id             String           @id @default(uuid())
+  userId         String
+  departmentId   String?
+  departmentName String?          // ✅ simpan snapshot nama departemen
+  date           DateTime         @default(now())
+  timeIn         DateTime?
+  timeOut        DateTime?
+  qrValue        String           @unique
+  role           UserRole         @default(PEKERJA)
+  status         AttendanceStatus @default(PRESENT)
 
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   // RELATIONS
-  user         User             @relation(fields: [userId], references: [id])
-  department   Department?      @relation(fields: [departmentId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
+  department     Department?      @relation(fields: [departmentId], references: [id])
 }
+
 
 model Department {
   id          String       @id @default(uuid())
@@ -82,7 +84,7 @@ model Department {
 model Barcode {
   id           String      @id @default(uuid())
   value        String      @unique
-  departmentId String
+  departmentId String      @unique   // ⬅️ bikin unique biar bisa dipake di upsert
   latitude     Float
   longitude    Float
 
