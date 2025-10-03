@@ -32,7 +32,7 @@ const form = reactive({
   role: 'ADMIN' as Role,
   password: '',
   confirmPassword: '',
-  departmentId: '',
+  departmentName: '',
   position: '',
 })
 
@@ -53,9 +53,27 @@ const fetchDepartments = async () => {
     const res = await fetch('http://localhost:3000/departments', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
-    departments.value = await res.json()
+    const data = await res.json()
+    
+    // Filter hanya IT dan Marketing dari data API
+    if (data && data.length > 0) {
+      departments.value = data.filter((d: Department) => 
+        d.name === 'IT' || d.name === 'Marketing'
+      )
+    } else {
+      // Data default hanya IT dan Marketing
+      departments.value = [
+        { id: '1', name: 'IT' },
+        { id: '2', name: 'Marketing' }
+      ]
+    }
   } catch (err) {
-    console.error('Gagal ambil departemen:', err)
+    console.error('Gagal ambil departemen, menggunakan data default:', err)
+    // Fallback data default hanya IT dan Marketing
+    departments.value = [
+      { id: '1', name: 'IT' },
+      { id: '2', name: 'Marketing' }
+    ]
   }
 }
 
@@ -83,7 +101,7 @@ const openAdd = () => {
   form.role = 'ADMIN'
   form.password = ''
   form.confirmPassword = ''
-  form.departmentId = ''
+  form.departmentName = ''
   form.position = ''
   showModal.value = true
 }
@@ -97,7 +115,7 @@ const openEdit = (acct: Account) => {
   form.username = acct.username
   form.name = acct.name ?? ''
   form.role = acct.role
-  form.departmentId = acct.departmentId ?? ''
+  form.departmentName = acct.departmentName ?? ''
   form.position = acct.position ?? ''
   form.password = ''
   form.confirmPassword = ''
@@ -119,11 +137,11 @@ const save = async () => {
     }
 
     if (form.role === 'KAPROG') {
-      if (!form.departmentId) {
+      if (!form.departmentName) {
         alert('❌ Departemen wajib dipilih untuk Kaprog!')
         return
       }
-      payload.departmentId = form.departmentId
+      payload.departmentName = form.departmentName
     }
     if (form.role === 'PEKERJA') {
       if (!form.position) {
@@ -131,11 +149,11 @@ const save = async () => {
         return
       }
       payload.position = form.position
-      if (!form.departmentId) {
+      if (!form.departmentName) {
         alert('❌ Departemen wajib dipilih untuk Pekerja!')
         return
       }
-      payload.departmentId = form.departmentId
+      payload.departmentName = form.departmentName
     }
 
     if (editing.value) {
@@ -184,11 +202,10 @@ const remove = async (acct: Account) => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex h-screen bg-white-100">
     <!-- SIDEBAR -->
     <aside class="w-60 bg-white p-6 flex flex-col">
       <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
-        SUPERADMIN
       </div>
       <nav class="flex flex-col space-y-2">
         <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
@@ -304,9 +321,9 @@ const remove = async (acct: Account) => {
             <!-- Departemen untuk Kaprog & Pekerja -->
             <div v-if="form.role === 'KAPROG' || form.role === 'PEKERJA'">
               <label class="block text-sm text-gray-600 mb-1">Departemen</label>
-              <select v-model="form.departmentId" class="w-full p-2 border rounded" required>
+              <select v-model="form.departmentName" class="w-full p-2 border rounded" required>
                 <option disabled value="">-- Pilih Departemen --</option>
-                <option v-for="d in departments" :key="d.id" :value="d.id">
+                <option v-for="d in departments" :key="d.id" :value="d.name">
                   {{ d.name }}
                 </option>
               </select>

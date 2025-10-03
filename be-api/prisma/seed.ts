@@ -1,46 +1,61 @@
-import { PrismaClient } from '@prisma/client'
-import * as bcrypt from 'bcrypt'
+import { PrismaClient, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  // --- SEED DEPARTMENT ---
-  const existingDepartments = await prisma.department.findMany()
-  if (existingDepartments.length === 0) {
-    await prisma.department.createMany({
-      data: [
-        { name: 'IT', code: 'IT' },
-        { name: 'MARKETING', code: 'MKT' },
-      ],
-    })
-    console.log('✅ Departments IT & MARKETING berhasil dibuat')
-  } else {
-    console.log('⚡ Departments sudah ada, skip seeding')
-  }
+  const password = await bcrypt.hash('123456', 10);
 
-  // --- SEED SUPERADMIN ---
-  const hashedPassword = await bcrypt.hash('password123', 10)
+  // Superadmin
   await prisma.user.upsert({
     where: { username: 'superadmin' },
+    update: { password, role: UserRole.SUPERADMIN },
+    create: { username: 'superadmin', password, role: UserRole.SUPERADMIN, name: 'Super Admin', email: 'superadmin@example.com' },
+  });
+
+  // KAPROG Marketing
+  const marketingDept = await prisma.department.upsert({
+    where: { code: 'MKT' },
     update: {},
+    create: { name: 'Marketing', code: 'MKT' },
+  });
+
+  await prisma.user.upsert({
+    where: { username: 'mia' },
+    update: { password, role: UserRole.KAPROG },
     create: {
-      username: 'superadmin',
-      email: 'superadmin@example.com',
-      password: hashedPassword,
-      name: 'Super Admin',
-      role: 'SUPERADMIN',
+      username: 'mia',
+      password,
+      role: UserRole.KAPROG,
+      name: 'Mia Kaprog',
+      email: 'mia@company.com',
+      departmentId: marketingDept.id,
     },
-  })
-  console.log('✅ Superadmin berhasil dibuat / sudah ada')
+  });
+
+  // KAPROG IT
+  const itDept = await prisma.department.upsert({
+    where: { code: 'IT' },
+    update: {},
+    create: { name: 'IT', code: 'IT' },
+  });
+
+  await prisma.user.upsert({
+    where: { username: 'alhizam' },
+    update: { password, role: UserRole.KAPROG },
+    create: {
+      username: 'alhizam',
+      password,
+      role: UserRole.KAPROG,
+      name: 'Alhizam Kaprog',
+      email: 'alhizam@company.com',
+      departmentId: itDept.id,
+    },
+  });
+
+  console.log('✅ Seed selesai');
 }
 
 main()
-  .then(async () => {
-    console.log('🎉 Seeding selesai')
-    await prisma.$disconnect()
-  })
-  .catch(async (e) => {
-    console.error('❌ Error seeding database:', e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+  .catch(e => console.error(e))
+  .finally(() => prisma.$disconnect());

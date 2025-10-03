@@ -1,29 +1,35 @@
-import { IsString, IsEmail, IsEnum, IsOptional, MinLength } from 'class-validator';
-import { Role } from '../../auth/roles.enum';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { UserRole } from '@prisma/client';
 
 export class CreateUserDto {
   @IsString()
-  username: string;
+  username!: string;
 
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password!: string;
 
-  @IsOptional()
+  @IsEnum(UserRole)
+  role!: UserRole;
+
   @IsString()
+  @IsOptional()
   name?: string;
 
-  @IsOptional()
   @IsString()
-  position?: string; // ✅ khusus pekerja
-
-  @IsEnum(Role)
-  role: Role;
-
   @IsOptional()
+  departmentName?: string; // PASTIKAN ADA INI
+
   @IsString()
-  departmentId?: string; // ✅ khusus kaprog
+  @IsOptional()
+  position?: string;
+
+  // BISA HAPUS departmentId KALAU TIDAK PAKAI
+  @IsString()
+  @IsOptional()
+  departmentId?: string;
 }

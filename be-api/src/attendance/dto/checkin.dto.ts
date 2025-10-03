@@ -1,13 +1,13 @@
 import { IsString, IsEnum } from 'class-validator';
-import { UserRole } from '../../common/types';
+import { UserRole } from '@prisma/client';
 
 export class CheckinDto {
   @IsString()
-  userId: string;
+  userId!: string;
 
- @IsEnum(UserRole)
-  role: UserRole;
+  @IsEnum(UserRole)
+  role!: UserRole;
 
   @IsString()
-  qrValue: string;
+  qrValue!: string;
 }

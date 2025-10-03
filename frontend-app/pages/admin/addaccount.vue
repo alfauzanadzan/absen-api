@@ -5,14 +5,14 @@ import { useAuth } from '@/composables/useAuth'
 definePageMeta({ middleware: ['role'] })
 
 type Role = 'SUPERADMIN' | 'ADMIN' | 'KAPROG' | 'PEKERJA'
-type Department = 'IT' | 'MARKETING' | null
 type Account = {
   id: string
   username: string
   email: string
   role: Role
   name?: string
-  department?: Department
+  departmentName?: string
+  position?: string
 }
 
 const accounts = ref<Account[]>([])
@@ -45,7 +45,8 @@ const form = reactive({
   role: 'KAPROG' as Role,
   password: '',
   confirmPassword: '',
-  department: null as Department,
+  departmentName: '',
+  position: '',
 })
 
 const filtered = computed(() =>
@@ -64,17 +65,21 @@ const openAdd = () => {
   form.role = 'KAPROG'
   form.password = ''
   form.confirmPassword = ''
-  form.department = null
+  form.departmentName = ''
+  form.position = ''
   showModal.value = true
 }
 
 const openEdit = (acct: Account) => {
-  if (acct.role === 'SUPERADMIN') return // 🚫 Superadmin tidak bisa diedit
+  // 🚫 Hanya KAPROG dan PEKERJA yang bisa diedit
+  if (!canEditDelete(acct.role)) return
+  
   editing.value = { ...acct }
   form.username = acct.username
   form.name = acct.name ?? ''
   form.role = acct.role
-  form.department = acct.department ?? null
+  form.departmentName = acct.departmentName ?? ''
+  form.position = acct.position ?? ''
   form.password = ''
   form.confirmPassword = ''
   showModal.value = true
@@ -90,12 +95,39 @@ const save = async () => {
   }
 
   // validasi departemen wajib untuk kaprog & pekerja
-  if ((form.role === 'KAPROG' || form.role === 'PEKERJA') && !form.department) {
-    alert('Departemen wajib dipilih!')
+  if (form.role === 'KAPROG' && !form.departmentName) {
+    alert('Departemen wajib dipilih untuk Kaprog!')
     return
   }
 
+  if (form.role === 'PEKERJA') {
+    if (!form.position) {
+      alert('Position wajib diisi untuk Pekerja!')
+      return
+    }
+    if (!form.departmentName) {
+      alert('Departemen wajib dipilih untuk Pekerja!')
+      return
+    }
+  }
+
   try {
+    const payload: any = {
+      username: form.username,
+      name: form.name,
+      role: form.role,
+    }
+
+    // Tambahkan departmentName untuk KAPROG dan PEKERJA
+    if (form.role === 'KAPROG' || form.role === 'PEKERJA') {
+      payload.departmentName = form.departmentName
+    }
+
+    // Tambahkan position untuk PEKERJA
+    if (form.role === 'PEKERJA') {
+      payload.position = form.position
+    }
+
     if (editing.value) {
       await fetch(`http://localhost:3000/users/${editing.value.id}`, {
         method: 'PUT',
@@ -103,12 +135,7 @@ const save = async () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({
-          username: form.username,
-          name: form.name,
-          role: form.role,
-          department: form.department,
-        }),
+        body: JSON.stringify(payload),
       })
     } else {
       await fetch('http://localhost:3000/users', {
@@ -118,27 +145,28 @@ const save = async () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          username: form.username,
-          name: form.name,
+          ...payload,
           email: `${form.username}@mail.com`,
           password: form.password,
-          role: form.role,
-          department: form.department,
         }),
       })
     }
     await fetchAccounts()
     showModal.value = false
-  } catch (err) {
+    alert('✅ Akun berhasil disimpan!')
+  } catch (err: any) {
     console.error('Gagal simpan akun:', err)
+    alert('❌ Gagal menyimpan akun: ' + (err.message || 'Unknown error'))
   }
 }
 
 const remove = async (acct: Account) => {
-  if (acct.role === 'SUPERADMIN') {
-    alert('Superadmin tidak bisa dihapus!')
+  // 🚫 Hanya KAPROG dan PEKERJA yang bisa dihapus
+  if (!canEditDelete(acct.role)) {
+    alert('Akun dengan role ' + acct.role + ' tidak bisa dihapus!')
     return
   }
+  
   if (!confirm(`Yakin hapus akun ${acct.username}?`)) return
   try {
     await fetch(`http://localhost:3000/users/${acct.id}`, {
@@ -146,34 +174,62 @@ const remove = async (acct: Account) => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
     await fetchAccounts()
+    alert('✅ Akun berhasil dihapus!')
   } catch (err) {
     console.error('Gagal hapus akun:', err)
+    alert('❌ Gagal menghapus akun!')
   }
+}
+
+// Helper untuk cek apakah bisa diedit/dihapus
+const canEditDelete = (role: Role) => {
+  return role === 'KAPROG' || role === 'PEKERJA'
 }
 </script>
 
 <template>
   <div class="flex h-screen bg-gray-100">
+    <!-- SIDEBAR -->
+    <aside class="w-60 bg-white p-6 flex flex-col">
+      <div class="flex items-center justify-center h-20 mb-6">
+        <!-- Logo -->
+      </div>
+      <nav class="flex flex-col space-y-2">
+        <a href="/admin/admin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
+        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
+        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
+        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
+        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
+        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+      </nav>
+    </aside>
+
     <main class="flex-1 p-8 overflow-y-auto">
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Manajemen Akun</h1>
+        <div>
+          <h1 class="text-3xl font-extrabold">
+            Halo, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
+          </h1>
+          <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'ADMIN' }}</p>
+        </div>
         <button
           @click="openAdd"
-          class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
         >
-          + Tambah Akun
+          Tambah Akun
         </button>
       </div>
 
       <!-- Search -->
-      <div class="mt-4">
+      <div class="mt-6 flex items-center gap-3">
         <input
           v-model="q"
-          type="text"
           placeholder="Cari akun..."
-          class="p-2 border rounded w-full max-w-xs"
+          class="px-4 py-2 border rounded-md w-80 bg-white/90"
         />
+        <span class="text-sm text-gray-500">Total: {{ accounts.length }}</span>
       </div>
 
       <!-- Table -->
@@ -186,6 +242,7 @@ const remove = async (acct: Account) => {
               <th class="text-left p-4">Email</th>
               <th class="text-left p-4">Role</th>
               <th class="text-left p-4">Departemen</th>
+              <th class="text-left p-4">Position</th>
               <th class="text-right p-4">Actions</th>
             </tr>
           </thead>
@@ -198,36 +255,57 @@ const remove = async (acct: Account) => {
               <td class="p-4">{{ acct.username }}</td>
               <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4">{{ acct.email }}</td>
-              <td class="p-4">{{ acct.role }}</td>
-              <td class="p-4">{{ acct.department ?? '-' }}</td>
+              <td class="p-4">
+                <span :class="{
+                  'text-red-600 font-semibold': acct.role === 'SUPERADMIN',
+                  'text-blue-600 font-semibold': acct.role === 'ADMIN', 
+                  'text-green-600': acct.role === 'KAPROG',
+                  'text-gray-600': acct.role === 'PEKERJA'
+                }">
+                  {{ acct.role }}
+                </span>
+              </td>
+              <td class="p-4">{{ acct.departmentName ?? '-' }}</td>
+              <td class="p-4">{{ acct.position ?? '-' }}</td>
               <td class="p-4 text-right">
                 <div class="inline-flex gap-2">
-                  <!-- Tombol edit muncul kalau bukan SUPERADMIN -->
-                  <button
-                    v-if="acct.role !== 'SUPERADMIN'"
-                    @click="openEdit(acct)"
-                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Edit
-                  </button>
-                  <!-- Tombol hapus muncul kalau bukan SUPERADMIN -->
-                  <button
-                    v-if="acct.role !== 'SUPERADMIN'"
-                    @click="remove(acct)"
-                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Hapus
-                  </button>
+                  <!-- Tampilkan action HANYA untuk KAPROG dan PEKERJA -->
+                  <template v-if="canEditDelete(acct.role)">
+                    <button
+                      @click="openEdit(acct)"
+                      class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      @click="remove(acct)"
+                      class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                    >
+                      Hapus
+                    </button>
+                  </template>
+                  <!-- Kosongkan untuk SUPERADMIN dan ADMIN -->
+                  <template v-else>
+                    <span class="text-xs text-gray-400 italic">-</span>
+                  </template>
                 </div>
               </td>
             </tr>
             <tr v-if="filtered.length === 0">
-              <td colspan="6" class="p-8 text-center text-gray-500">
+              <td colspan="7" class="p-8 text-center text-gray-500">
                 Tidak ada akun ditemukan.
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Info -->
+      <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <p class="text-sm text-yellow-700">
+          <strong>Info:</strong> Hanya akun dengan role <strong>KAPROG</strong> dan <strong>PEKERJA</strong> yang dapat diedit atau dihapus.
+          Akun <strong>SUPERADMIN</strong> dan <strong>ADMIN</strong> dilindungi.
+        </p>
       </div>
 
       <!-- Modal -->
@@ -270,23 +348,34 @@ const remove = async (acct: Account) => {
             <div>
               <label class="block text-sm text-gray-600 mb-1">Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded">
+                <option value="ADMIN">ADMIN</option>
                 <option value="KAPROG">KAPROG</option>
                 <option value="PEKERJA">PEKERJA</option>
               </select>
             </div>
 
-            <!-- Departemen wajib untuk KAPROG & PEKERJA -->
+            <!-- Departemen untuk KAPROG & PEKERJA -->
             <div v-if="form.role === 'KAPROG' || form.role === 'PEKERJA'">
               <label class="block text-sm text-gray-600 mb-1">Departemen</label>
               <select
-                v-model="form.department"
+                v-model="form.departmentName"
                 class="w-full p-2 border rounded"
                 required
               >
                 <option disabled value="">-- Pilih Departemen --</option>
                 <option value="IT">IT</option>
-                <option value="MARKETING">Marketing</option>
+                <option value="Marketing">Marketing</option>
               </select>
+            </div>
+
+            <!-- Position untuk PEKERJA -->
+            <div v-if="form.role === 'PEKERJA'">
+              <label class="block text-sm text-gray-600 mb-1">Position</label>
+              <input
+                v-model="form.position"
+                class="w-full p-2 border rounded"
+                required
+              />
             </div>
 
             <!-- Password hanya saat tambah akun -->

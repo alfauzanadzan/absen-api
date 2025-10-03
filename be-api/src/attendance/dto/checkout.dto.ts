@@ -1,12 +1,13 @@
 import { IsString } from 'class-validator';
-import { UserRole } from '../../common/types';
+import { UserRole } from '@prisma/client';
 
-export class CheckOutDto {   // ⬅️ tetap CheckOutDto (huruf O besar)
+export class CheckoutDto {
   @IsString()
-  userId: string;
-
-  role: UserRole;
+  userId!: string;
 
   @IsString()
-  qrValue: string;
+  role!: UserRole;
+
+  @IsString()
+  qrValue!: string;
 }
