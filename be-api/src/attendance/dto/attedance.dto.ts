@@ -1,14 +1,13 @@
-// src/attendance/dto/attendance.dto.ts
-import { IsString, IsUUID, IsIn } from 'class-validator';
+import { IsString, IsUUID, IsEnum } from 'class-validator';
+import { UserRole } from '@prisma/client';
 
 export class AttendanceDto {
   @IsUUID()
-  userId: string;
+  userId!: string;
+
+  @IsEnum(UserRole)
+  role!: UserRole;
 
   @IsString()
-  @IsIn(['PEKERJA', 'KAPROG'])
-  role: string;
-
-  @IsString()
-  qrValue: string;
+  qrValue!: string;
 }
