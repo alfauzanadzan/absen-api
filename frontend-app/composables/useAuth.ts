@@ -95,11 +95,11 @@ export const useAuth = () => {
       case "SUPERADMIN": return "/superadmin/super"
       case "ADMIN": return "/admin/admin"
       case "KAPROG":
-        if (dept === "marketing") return "/kaprog-marketing"
-        return "/kaprog-it"
+        if (dept === "marketing") return "/kaprog-marketing/kaprogmarketing"
+        return "/kaprog-it/kaprogit"
       case "PEKERJA":
-        if (dept === "marketing") return "/pekerja-marketing"
-        return "/pekerja-it"
+        if (dept === "marketing") return "/pekerja-marketing/pekerjamarketing"
+        return "/pekerja-it/pekerjait"
       default: return "/"
     }
   }
