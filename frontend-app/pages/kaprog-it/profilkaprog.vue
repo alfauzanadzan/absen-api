@@ -1,31 +1,15 @@
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col border-r">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <!-- Bisa taruh logo -->
+    <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
         <h1 class="text-lg font-bold text-blue-600">KAPROG IT</h1>
       </div>
-
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-200">
-          Dashboard
-        </a>
-        <a
-          href="/kaprog-it/profilkaprog"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Profile
-        </a>
-        <a href="/kaprog-it/employees" class="p-2 rounded hover:bg-gray-200">
-          Employees
-        </a>
-        <a href="/kaprog-it/attendance" class="p-2 rounded hover:bg-gray-200">
-          Attendance
-        </a>
-        <a href="/kaprog-it/reports" class="p-2 rounded hover:bg-gray-200">
-          Reports
-        </a>
+        <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
+        <a href="/kaprog-it/profilkaprog" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
+        <a href="/kaprog-it/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
+        <a href="/kaprog-it/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 

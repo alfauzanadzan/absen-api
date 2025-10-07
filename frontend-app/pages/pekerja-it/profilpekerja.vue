@@ -14,32 +14,16 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-8 flex flex-col border-r">
-      <div class="flex items-center justify-center h-16 mb-8">
-        <h1 class="text-lg font-bold text-blue-600">Worker IT</h1>
+    <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">PEKERJA IT</h1>
       </div>
-
-      <nav class="flex flex-col space-y-2 text-gray-700">
-        <NuxtLink
-          to="/pekerja-it/pekerjait"
-          class="p-2 rounded hover:bg-gray-100"
-        >
-          Dashboard
-        </NuxtLink>
-        <NuxtLink
-          to="/pekerja-it/profilpekerja"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Profile
-        </NuxtLink>
-        <NuxtLink
-          to="/pekerja-it/reports"
-          class="p-2 rounded hover:bg-gray-100"
-        >
-          Reports
-        </NuxtLink>
+      <nav class="flex flex-col space-y-2">
+        <a href="/pekerja-it/pekerjait" class="p-2 rounded hover:bg-gray-100">🏠 Dashboard</a>
+        <a href="/pekerja-it/profilpekerja" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
+        <a href="/pekerja-it/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 

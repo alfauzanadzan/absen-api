@@ -198,8 +198,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6"></div>
+     <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">KAPROG IT</h1>
+      </div>
       <nav class="flex flex-col space-y-2">
         <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-400">🏠 Dashboard</a>
         <a href="/kaprog-it/checkin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">🕓 Check-in</a>

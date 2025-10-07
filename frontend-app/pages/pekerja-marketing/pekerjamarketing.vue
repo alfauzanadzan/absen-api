@@ -47,32 +47,16 @@ const goToCheckoutPage = () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white border-r shadow-sm p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">Marketing Panel</h1>
+    <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">PEKERJA MARKETING</h1>
       </div>
-
-      <nav class="flex flex-col space-y-2 text-gray-700">
-        <NuxtLink
-          href="/pekerja-marketing/pekerjamarketing"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Dashboard
-        </NuxtLink>
-        <NuxtLink
-          href="/pekerja-marketing/profilpekerja"
-          class="p-2 rounded hover:bg-gray-100"
-        >
-          Profile
-        </NuxtLink>
-        <NuxtLink
-          href="/pekerja-marketing/reports"
-          class="p-2 rounded hover:bg-gray-100"
-        >
-          Reports
-        </NuxtLink>
+      <nav class="flex flex-col space-y-2">
+        <a href="/pekerja-marketing/pekerjamarketing" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">🏠 Dashboard</a>
+        <a href="/pekerja-marketing/profilpekerja" class="p-2 rounded hover:bg-gray-100">Profile</a>
+        <a href="/pekerja-marketing/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 
@@ -85,7 +69,6 @@ const goToCheckoutPage = () => {
             WELCOME, {{ user?.username || "User" }}
           </h2>
           <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
-          <p class="text-sm text-gray-600 uppercase">MARKETING</p>
         </div>
 
         <!-- Tombol Logout -->

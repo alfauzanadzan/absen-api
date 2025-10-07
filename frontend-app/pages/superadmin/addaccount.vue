@@ -16,6 +16,7 @@ type Account = {
   departmentId?: string
   departmentName?: string
   position?: string
+  avatar?: string
 }
 
 // ===== State =====
@@ -34,7 +35,9 @@ const form = reactive({
   confirmPassword: '',
   departmentName: '',
   position: '',
+  avatar: '', // ✅ avatar baru
 })
+const avatarPreview = ref<string | null>(null)
 
 // ===== Fetch Data =====
 const fetchAccounts = async () => {
@@ -54,25 +57,12 @@ const fetchDepartments = async () => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
     const data = await res.json()
-    
-    // Filter hanya IT dan Marketing dari data API
-    if (data && data.length > 0) {
-      departments.value = data.filter((d: Department) => 
-        d.name === 'IT' || d.name === 'Marketing'
-      )
-    } else {
-      // Data default hanya IT dan Marketing
-      departments.value = [
-        { id: '1', name: 'IT' },
-        { id: '2', name: 'Marketing' }
-      ]
-    }
+    departments.value = data.filter((d: Department) => d.name === 'IT' || d.name === 'Marketing')
   } catch (err) {
     console.error('Gagal ambil departemen, menggunakan data default:', err)
-    // Fallback data default hanya IT dan Marketing
     departments.value = [
       { id: '1', name: 'IT' },
-      { id: '2', name: 'Marketing' }
+      { id: '2', name: 'Marketing' },
     ]
   }
 }
@@ -96,13 +86,17 @@ const filtered = computed(() =>
 // ===== Modal Handlers =====
 const openAdd = () => {
   editing.value = null
-  form.username = ''
-  form.name = ''
-  form.role = 'ADMIN'
-  form.password = ''
-  form.confirmPassword = ''
-  form.departmentName = ''
-  form.position = ''
+  Object.assign(form, {
+    username: '',
+    name: '',
+    role: 'ADMIN',
+    password: '',
+    confirmPassword: '',
+    departmentName: '',
+    position: '',
+    avatar: '',
+  })
+  avatarPreview.value = null
   showModal.value = true
 }
 
@@ -112,14 +106,31 @@ const openEdit = (acct: Account) => {
     return
   }
   editing.value = { ...acct }
-  form.username = acct.username
-  form.name = acct.name ?? ''
-  form.role = acct.role
-  form.departmentName = acct.departmentName ?? ''
-  form.position = acct.position ?? ''
-  form.password = ''
-  form.confirmPassword = ''
+  Object.assign(form, {
+    username: acct.username,
+    name: acct.name ?? '',
+    role: acct.role,
+    departmentName: acct.departmentName ?? '',
+    position: acct.position ?? '',
+    password: '',
+    confirmPassword: '',
+    avatar: acct.avatar ?? '',
+  })
+  avatarPreview.value = acct.avatar ?? null
   showModal.value = true
+}
+
+// ===== Handle Avatar Upload =====
+const handleAvatarChange = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = () => {
+      avatarPreview.value = reader.result as string
+      form.avatar = reader.result as string // simpan base64 ke form.avatar
+    }
+    reader.readAsDataURL(file)
+  }
 }
 
 // ===== Save =====
@@ -134,6 +145,7 @@ const save = async () => {
       username: form.username,
       name: form.name,
       role: form.role,
+      avatar: form.avatar || null, // ✅ kirim avatar
     }
 
     if (form.role === 'KAPROG') {
@@ -170,7 +182,8 @@ const save = async () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}` },
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
         body: JSON.stringify({
           ...payload,
           email: `${form.username}@mail.com`,
@@ -205,8 +218,7 @@ const remove = async (acct: Account) => {
   <div class="flex h-screen bg-white-100">
     <!-- SIDEBAR -->
     <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
-      </div>
+      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl"></div>
       <nav class="flex flex-col space-y-2">
         <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
         <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200">Profile</a>
@@ -247,6 +259,7 @@ const remove = async (acct: Account) => {
         <table class="min-w-full">
           <thead class="bg-gray-50">
             <tr>
+              <th class="p-4 text-left">Avatar</th>
               <th class="text-left p-4">Username</th>
               <th class="text-left p-4">Nama Lengkap</th>
               <th class="text-left p-4">Email</th>
@@ -258,6 +271,16 @@ const remove = async (acct: Account) => {
           </thead>
           <tbody>
             <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
+              <td class="p-4">
+                <img
+                  v-if="acct.avatar"
+                  :src="acct.avatar"
+                  class="w-10 h-10 rounded-full object-cover border"
+                />
+                <div v-else class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                  ?
+                </div>
+              </td>
               <td class="p-4">{{ acct.username }}</td>
               <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4">{{ acct.email }}</td>
@@ -266,7 +289,6 @@ const remove = async (acct: Account) => {
               <td class="p-4">{{ acct.position ?? '-' }}</td>
               <td class="p-4 text-right">
                 <div class="inline-flex gap-2">
-                  <!-- tombol edit muncul semua kecuali superadmin -->
                   <button
                     v-if="!(acct.role === 'ADMIN' && acct.username === 'superadmin')"
                     @click="openEdit(acct)"
@@ -274,7 +296,6 @@ const remove = async (acct: Account) => {
                   >
                     Edit
                   </button>
-                  <!-- tombol hapus hilang kalau superadmin -->
                   <button
                     v-if="!(acct.role === 'ADMIN' && acct.username === 'superadmin')"
                     @click="remove(acct)"
@@ -286,7 +307,7 @@ const remove = async (acct: Account) => {
               </td>
             </tr>
             <tr v-if="filtered.length === 0">
-              <td colspan="7" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
+              <td colspan="8" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
             </tr>
           </tbody>
         </table>
@@ -301,14 +322,26 @@ const remove = async (acct: Account) => {
           </div>
 
           <form @submit.prevent="save" class="mt-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <img
+                v-if="avatarPreview"
+                :src="avatarPreview"
+                class="w-16 h-16 rounded-full object-cover border"
+              />
+              <div v-else class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">?</div>
+              <input type="file" accept="image/*" @change="handleAvatarChange" class="text-sm" />
+            </div>
+
             <div>
               <label class="block text-sm text-gray-600 mb-1">Username</label>
               <input v-model="form.username" class="w-full p-2 border rounded" required />
             </div>
+
             <div>
               <label class="block text-sm text-gray-600 mb-1">Nama Lengkap</label>
               <input v-model="form.name" class="w-full p-2 border rounded" required />
             </div>
+
             <div>
               <label class="block text-sm text-gray-600 mb-1">Role</label>
               <select v-model="form.role" class="w-full p-2 border rounded">
@@ -318,7 +351,6 @@ const remove = async (acct: Account) => {
               </select>
             </div>
 
-            <!-- Departemen untuk Kaprog & Pekerja -->
             <div v-if="form.role === 'KAPROG' || form.role === 'PEKERJA'">
               <label class="block text-sm text-gray-600 mb-1">Departemen</label>
               <select v-model="form.departmentName" class="w-full p-2 border rounded" required>
@@ -329,17 +361,16 @@ const remove = async (acct: Account) => {
               </select>
             </div>
 
-            <!-- Position untuk Pekerja -->
             <div v-if="form.role === 'PEKERJA'">
               <label class="block text-sm text-gray-600 mb-1">Position</label>
               <input v-model="form.position" class="w-full p-2 border rounded" required />
             </div>
 
-            <!-- Password hanya saat tambah -->
             <div v-if="!editing">
               <label class="block text-sm text-gray-600 mb-1">Password</label>
               <input v-model="form.password" type="password" class="w-full p-2 border rounded" required />
             </div>
+
             <div v-if="!editing">
               <label class="block text-sm text-gray-600 mb-1">Konfirmasi Password</label>
               <input v-model="form.confirmPassword" type="password" class="w-full p-2 border rounded" required />

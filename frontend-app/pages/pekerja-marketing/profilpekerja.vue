@@ -1,30 +1,14 @@
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white border-r p-6 flex flex-col">
-      <div class="flex items-center justify-center h-16 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">Marketing</h1>
+    <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">PEKERJA MARKETING</h1>
       </div>
-
-      <nav class="flex flex-col space-y-2 text-gray-700">
-        <NuxtLink
-          to="/pekerja-marketing/pekerjamarketing"
-          class="p-2 rounded hover:bg-gray-100"
-        >
-          Dashboard
-        </NuxtLink>
-        <NuxtLink
-          to="/pekerja-marketing/profilpekerja"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Profile
-        </NuxtLink>
-        <NuxtLink
-          to="/pekerja-marketing/reports"
-          class="p-2 rounded hover:bg-gray-100"
-        >
-          Reports
-        </NuxtLink>
+      <nav class="flex flex-col space-y-2">
+        <a href="/pekerja-marketing/pekerjamarketing" class="p-2 rounded hover:bg-gray-100">🏠 Dashboard</a>
+        <a href="/pekerja-marketing/profilpekerja" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
+        <a href="/pekerja-marketing/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 

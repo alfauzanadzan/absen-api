@@ -2,28 +2,14 @@
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <!-- Logo bisa taruh di sini -->
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">KAPROG MARKETING</h1>
       </div>
       <nav class="flex flex-col space-y-2">
-        <a
-          href="/kaprog-marketing/kaprogmarketing"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Dashboard
-        </a>
-        <a href="/kaprog-marketing/profilkaprog" class="p-2 rounded hover:bg-gray-200">
-          Profile
-        </a>
-        <a href="/kaprog-marketing/employees" class="p-2 rounded hover:bg-gray-200">
-          Employees
-        </a>
-        <a href="/kaprog-marketing/attendance" class="p-2 rounded hover:bg-gray-200">
-          Attendance
-        </a>
-        <a href="/kaprog-marketing/reports" class="p-2 rounded hover:bg-gray-200">
-          Reports
-        </a>
+        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">🏠 Dashboard</a>
+        <a href="/kaprog-marketing/profilkaprog" class="p-2 rounded hover:bg-gray-100">Profile</a>
+        <a href="/kaprog-marketing/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
+        <a href="/kaprog-marketing/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 
@@ -34,7 +20,6 @@
         <div>
           <h2 class="text-2xl font-bold">WELCOME, {{ user?.username }}</h2>
           <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
-          <p class="text-sm text-gray-600 uppercase">MARKETING</p>
         </div>
         <button
           @click="logout"

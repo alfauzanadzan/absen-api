@@ -1,22 +1,19 @@
 <template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-59 bg-white p-6 flex flex-col border-r">
-      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
-        ADMIN
+     <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">ADMIN</h1>
       </div>
-
       <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-100">Profile</a>
-        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-100">Employees</a>
-        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-100">Add Account</a>
+        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
+        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
         <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
-        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-100">Schedule</a>
         <a href="/admin/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
       </nav>
     </aside>
-
+    
     <!-- Main Content -->
     <main class="flex-1 p-8 overflow-y-auto">
       <h1 class="text-3xl font-bold mb-8">REPORTS</h1>

@@ -160,19 +160,16 @@ const getStatusColor = (status: string) => {
 <template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h2 class="text-lg font-bold">Admin Panel</h2>
+     <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">ADMIN</h1>
       </div>
-
       <nav class="flex flex-col space-y-2">
         <a href="/admin/admin" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-200">Profile</a>
-        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-200">Employees</a>
-        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-200">Add Account</a>
+        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
+        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
         <a href="/admin/attendance" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Attendance</a>
-        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-200">Schedule</a>
-        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-200">Reports</a>
+        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
       </nav>
     </aside>
 

@@ -2,15 +2,16 @@
   <div class="min-h-screen bg-white-100">
     <div class="flex">
       <!-- Sidebar -->
-      <aside class="w-60 bg-white p-8 flex flex-col">
-        <div class="flex items-center justify-center h-20 mb-6"></div>
-
-        <nav class="flex flex-col space-y-2 text-gray-700">
-          <a href="/pekerja-it/pekerjait" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
-          <a href="/pekerja-it/profilpekerja" class="p-2 rounded hover:bg-gray-100">Profile</a>
+      <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">PEKERJA IT</h1>
+      </div>
+      <nav class="flex flex-col space-y-2">
+        <a href="/pekerja-it/pekerjait" class="p-2 rounded hover:bg-gray-100">🏠 Dashboard</a>
+        <a href="/pekerja-it/profilpekerja" class="p-2 rounded hover:bg-gray-100">Profile</a>
           <a href="/pekerja-it/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
-        </nav>
-      </aside>
+      </nav>
+    </aside>
 
       <!-- Content -->
       <main class="flex-1 p-6">

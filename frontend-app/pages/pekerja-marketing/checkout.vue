@@ -112,7 +112,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-white">
+    <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">PEKERJA MARKETING</h1>
+      </div>
+      <nav class="flex flex-col space-y-2">
+        <a href="/pekerja-marketing/pekerjamarketing" class="p-2 rounded hover:bg-gray-400">🏠 Dashboard</a>
+        <a href="/pekerja-marketing/checkin" class="p-2 rounded hover:bg-gray-400">🕓 Check-in</a>
+        <a href="/pekerja-marketing/checkout" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">⏰ Check-out</a>
+      </nav>
+    </aside>
     <main class="flex-1 p-8 flex flex-col items-center justify-center">
       <div class="w-full max-w-md">
         <div class="mb-6 text-center">

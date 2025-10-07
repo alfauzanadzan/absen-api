@@ -38,61 +38,58 @@ const goToCheckoutScanner = () => router.push("/pekerja-it/checkout")
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white border-r p-6 flex flex-col">
-      <div class="flex items-center justify-center h-16 mb-8">
-        <h1 class="text-xl font-bold text-blue-600">PEKERJA IT</h1>
+    <aside class="w-60 bg-white p-6 flex flex-col">
+       <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-lg font-bold text-blue-600">PEKERJA IT</h1>
       </div>
-
-      <nav class="flex flex-col space-y-2 text-gray-700">
-        <NuxtLink to="/pekerja-it/dashboard" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">
-          Dashboard
-        </NuxtLink>
-        <NuxtLink to="/pekerja-it/profilpekerja" class="p-2 rounded hover:bg-gray-100">
-          Profile
-        </NuxtLink>
-        <NuxtLink to="/pekerja-it/reports" class="p-2 rounded hover:bg-gray-100">
-          Reports
-        </NuxtLink>
+      <nav class="flex flex-col space-y-2">
+        <a href="/pekerja-it/pekerjait" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">🏠 Dashboard</a>
+        <a href="/pekerja-it/profilpekerja" class="p-2 rounded hover:bg-gray-100">Profile</a>
+        <a href="/pekerja-it/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center justify-center">
+    <main class="flex-1 p-8 overflow-y-auto">
       <!-- Header -->
-      <div class="flex justify-between items-center w-full mb-8">
+      <div class="flex justify-between items-center mb-6">
         <div>
-          <h2 class="text-2xl font-bold">WELCOME, {{ user?.username || "Guest" }}</h2>
+          <h2 class="text-2xl font-bold">WELCOME, {{ user?.username }}</h2>
           <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
-          <p class="text-sm text-gray-600 uppercase">IT</p>
         </div>
-
         <button
           @click="logout"
-          class="bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition"
+          class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
         >
           Log Out
         </button>
       </div>
 
-      <!-- Clock & Actions -->
-      <p class="text-8xl font-bold tracking-widest">{{ time }}</p>
-      <p class="mt-4 text-gray-600 text-lg">Silakan lakukan absensi hari ini</p>
+      <!-- Clock + Scan Mode -->
+      <div class="flex flex-col items-center mt-20">
+        <p class="text-8xl font-bold">{{ time }}</p>
+        <p class="mt-4 text-gray-600">
+          Pilih mode Check-in / Check-out untuk melakukan absensi via barcode
+        </p>
 
-      <div class="flex gap-6 mt-8">
-        <button
-          @click="goToCheckinScanner"
-          class="bg-blue-500 text-white font-semibold px-8 py-3 rounded-lg shadow hover:bg-blue-600 transition"
-        >
-          Check In
-        </button>
-        <button
-          @click="goToCheckoutScanner"
-          class="bg-red-600 text-white font-semibold px-8 py-3 rounded-lg shadow hover:bg-red-700 transition"
-        >
-          Check Out
-        </button>
+        <div class="flex gap-4 mt-8">
+          <!-- ✅ Ganti path sesuai folder kaprog-marketing -->
+          <router-link
+            to="/pekerja-it/checkin"
+            class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+          >
+            Check In (Scan)
+          </router-link>
+
+          <router-link
+            to="/pekerja-it/checkout"
+            class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
+          >
+            Check Out (Scan)
+          </router-link>
+        </div>
       </div>
     </main>
   </div>
