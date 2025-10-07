@@ -2,13 +2,15 @@
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6"></div>
+      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
+        KAPROG MARKETING
+      </div>
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/kaprog-marketing/profilkaprog" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/kaprog-marketing/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
+        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
+        <a href="/kaprog-marketing/profilkaprog" class="p-2 rounded hover:bg-gray-100">Profile</a>
+        <a href="/kaprog-marketing/employees" class="p-2 rounded hover:bg-gray-100">Employees</a>
         <a href="/kaprog-marketing/attendance" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Attendance</a>
-        <a href="/kaprog-marketing/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+        <a href="/kaprog-marketing/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
       </nav>
     </aside>
 
@@ -38,7 +40,7 @@
               <th class="text-left px-6 py-3 font-semibold">Position</th>
               <th class="text-left px-6 py-3 font-semibold">Time</th>
               <th class="text-left px-6 py-3 font-semibold">Status</th>
-              <th class="text-left px-6 py-3 font-semibold">Action</th>
+              <th class="text-left px-6 py-3 font-semibold text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -51,18 +53,20 @@
               <td class="px-6 py-4">{{ rec.position }}</td>
               <td class="px-6 py-4">{{ rec.time }}</td>
               <td class="px-6 py-4">{{ rec.status }}</td>
-              <td class="px-6 py-4">
+              <td class="px-6 py-4 text-center">
                 <button
-                  class="bg-blue-500 text-white px-3 py-1 rounded"
+                  class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                   @click="openEdit(rec)"
                 >
                   Edit
                 </button>
               </td>
             </tr>
+
+            <!-- Kalau belum ada data -->
             <tr v-if="attendances.length === 0">
               <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data kehadiran Pekerja Anda hari ini.
+                Belum ada data kehadiran pekerja Marketing.
               </td>
             </tr>
           </tbody>
@@ -108,14 +112,14 @@
           <div class="flex justify-end gap-3 mt-4">
             <button
               type="button"
-              class="px-4 py-2 rounded border"
+              class="px-4 py-2 rounded border hover:bg-gray-50"
               @click="closeModal"
             >
               Batal
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded bg-blue-500 text-white"
+              class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
             >
               Simpan
             </button>
@@ -133,17 +137,14 @@ import { useAuth } from "@/composables/useAuth"
 
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? "http://localhost:3000"
-
 const { user, loadUser } = useAuth()
 
-// tanggal hari ini
+// Tanggal hari ini
 const today = new Date()
 const pad = (n: number) => (n < 10 ? "0" + n : String(n))
-const displayDate = `Today ${pad(today.getDate())}-${pad(
-  today.getMonth() + 1
-)}-${today.getFullYear()}`
+const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
 
-// Attendances
+// Attendance list
 type AttendanceRow = {
   id: string
   userId: string
@@ -151,17 +152,16 @@ type AttendanceRow = {
   position: string
   time: string
   status: string
-  raw: any
 }
 const attendances = ref<AttendanceRow[]>([])
 
-// modal
 const showModal = ref(false)
 const editingRecord = ref<AttendanceRow | null>(null)
 
 const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("token") : null
 
+// Ambil data attendance khusus Marketing
 const fetchAttendances = async () => {
   try {
     const token = getToken()
@@ -175,32 +175,22 @@ const fetchAttendances = async () => {
     if (!res.ok) return
     const data = await res.json().catch(() => [])
 
-    const deptId = user.value?.departmentId
+    const deptName = user.value?.departmentName ?? "MARKETING"
+
     attendances.value = (data || [])
-      .filter((a: any) => a.user?.departmentId === deptId)
+      .filter((a: any) => a.departmentName === deptName && a.role === "PEKERJA")
       .map((a: any) => {
-        const name = a.user?.name ?? a.user?.username ?? "Unknown"
-        const pos = a.user?.position ?? "-"
-        const t = a.timeIn ?? a.createdAt
-        let timeStr = ""
-        try {
-          timeStr = new Date(t).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })
-        } catch {
-          timeStr = String(t ?? "")
-        }
+        const timeStr = a.timeIn
+          ? new Date(a.timeIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "-"
         return {
           id: a.id,
           userId: a.userId,
-          name,
-          position: pos,
+          name: a.user?.name ?? a.user?.username ?? "Unknown",
+          position: a.user?.role ?? "-",
           time: timeStr,
-          status: a.status,
-          raw: a,
-        } as AttendanceRow
+          status: a.status ?? "-",
+        }
       })
   } catch (err) {
     console.error("fetchAttendances error", err)
@@ -208,9 +198,7 @@ const fetchAttendances = async () => {
 }
 
 function markAllPresent() {
-  alert(
-    "Mark semua hadir khusus departemen ini → bisa POST ke /attendance/checkin dengan filter department."
-  )
+  alert("✅ Fitur Mark semua hadir untuk departemen Marketing — coming soon...")
 }
 
 function openEdit(rec: AttendanceRow) {
@@ -238,9 +226,7 @@ async function saveEdit() {
     console.error("update attendance error", e)
   }
 
-  const idx = attendances.value.findIndex(
-    (r) => r.id === editingRecord.value?.id
-  )
+  const idx = attendances.value.findIndex((r) => r.id === editingRecord.value?.id)
   if (idx !== -1) {
     attendances.value[idx].time = editingRecord.value.time
     attendances.value[idx].status = editingRecord.value.status

@@ -2,11 +2,12 @@
 definePageMeta({ middleware: ["role"] })
 
 import { ref, onMounted, onBeforeUnmount } from "vue"
-import { useRuntimeConfig } from "#imports"
+import { useRuntimeConfig, useRouter } from "#imports"
 import { useAuth } from "@/composables/useAuth"
 
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? "http://localhost:3000"
+const router = useRouter()
 
 const { user, loadUser } = useAuth()
 
@@ -61,10 +62,19 @@ const postAttendance = async (payload: {
 
     try {
       const json = text ? JSON.parse(text) : {}
-      message.value = json?.message ?? "✅ Check-in berhasil"
+      message.value = json?.message ?? "✅ Absen berhasil!"
     } catch {
-      message.value = text || "✅ Check-in berhasil"
+      message.value = text || "✅ Absen berhasil!"
     }
+
+    // ✅ Notifikasi sukses
+    alert("✅ Absen berhasil!")
+
+    // ✅ Redirect ke dashboard setelah 1 detik
+    setTimeout(() => {
+      router.push("/kaprog-it/kaprogit")
+    }, 1000)
+
     return true
   } catch (err: any) {
     console.error("postAttendance error", err)
@@ -107,7 +117,6 @@ const handleDecodedRaw = async (raw: string) => {
     const barcode = await res.json()
     console.log("🏢 Barcode result:", barcode)
 
-    // ✅ Payload tanpa departmentId (karena backend ambil otomatis)
     const payload = {
       userId: String(user.value.id),
       role: String(user.value.role),

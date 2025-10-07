@@ -2,15 +2,15 @@
 definePageMeta({ middleware: ["role"] });
 
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRouter } from "#imports";
 import { useAuth } from "@/composables/useAuth";
 
 const { user, loadUser } = useAuth();
+const router = useRouter();
 
-// Jam realtime
+// ---------- STATE ----------
 const time = ref("");
 let clockInterval: number | null = null;
-
-// Scanner
 const videoRef = ref<HTMLVideoElement | null>(null);
 const scanning = ref(false);
 const message = ref<string | null>(null);
@@ -19,7 +19,7 @@ const cameraError = ref<string | null>(null);
 let qrReader: any = null;
 let debounceLock = false;
 
-// Update jam realtime
+// ---------- UPDATE CLOCK ----------
 const updateClock = () => {
   time.value = new Date().toLocaleTimeString([], {
     hour: "2-digit",
@@ -28,7 +28,7 @@ const updateClock = () => {
   });
 };
 
-// ✅ Check-in pekerja via QR
+// ---------- CHECK-IN ----------
 const checkIn = async (qrValue: string) => {
   if (!user.value?.id) {
     message.value = "⚠️ User belum login";
@@ -38,20 +38,25 @@ const checkIn = async (qrValue: string) => {
   try {
     const body = { userId: user.value.id, role: user.value.role, qrValue };
 
-    // 🔥 FIX: tanpa /api, karena backend lo gak pakai app.setGlobalPrefix("api")
     const res = await $fetch("http://localhost:3000/attendance/checkin", {
       method: "POST",
       body,
     });
 
-    message.value = res ? "✅ Check-in berhasil" : "✅ Check-in selesai";
+    message.value = "✅ Absen berhasil!";
+    alert("✅ Absen berhasil!");
+
+    // ✅ Redirect ke dashboard pekerja IT
+    setTimeout(() => {
+      router.push("/pekerja/pekerjait");
+    }, 1000);
   } catch (err: any) {
     console.error(err);
     message.value = `❌ Gagal check-in: ${err?.data?.message || err.message || err}`;
   }
 };
 
-// Handle QR hasil scan
+// ---------- HANDLE QR ----------
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return;
   debounceLock = true;
@@ -63,7 +68,7 @@ const handleDecodedRaw = async (raw: string) => {
   setTimeout(() => (debounceLock = false), 2000);
 };
 
-// Start scanner
+// ---------- START SCANNER ----------
 const startScanner = async () => {
   cameraError.value = null;
   scanning.value = false;
@@ -88,13 +93,13 @@ const startScanner = async () => {
   }
 };
 
-// Stop scanner
+// ---------- STOP SCANNER ----------
 const stopScanner = () => {
   if (qrReader) qrReader.reset?.();
   scanning.value = false;
 };
 
-// Lifecycle
+// ---------- LIFECYCLE ----------
 onMounted(async () => {
   await loadUser();
   updateClock();
@@ -121,23 +126,46 @@ onBeforeUnmount(() => {
           <p class="text-gray-500 mt-1">{{ user?.username ?? "User" }}</p>
         </div>
 
+        <!-- CAMERA PREVIEW -->
         <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow mx-auto">
           <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover"></video>
-          <div class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm">
+
+          <div
+            class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
+          >
             <div>
               <span v-if="scanning">🔍 Scanning...</span>
               <span v-else>⏸ Paused</span>
             </div>
             <div>
-              <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">Stop</button>
-              <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
+              <button
+                v-if="scanning"
+                @click="stopScanner"
+                class="px-3 py-1 bg-red-500 rounded text-xs"
+              >
+                Stop
+              </button>
+              <button
+                v-else
+                @click="startScanner"
+                class="px-3 py-1 bg-green-500 rounded text-xs"
+              >
+                Start
+              </button>
             </div>
           </div>
         </div>
 
+        <!-- STATUS -->
         <div class="text-center mt-4">
           <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
-          <p v-else-if="message" class="text-sm" :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'">{{ message }}</p>
+          <p
+            v-else-if="message"
+            class="text-sm"
+            :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'"
+          >
+            {{ message }}
+          </p>
           <p v-else class="text-sm text-gray-500">📱 Siap melakukan Check-in</p>
         </div>
       </div>

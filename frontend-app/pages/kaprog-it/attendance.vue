@@ -32,28 +32,43 @@
       </div>
 
       <!-- Table -->
-      <div class="bg-white border rounded shadow-sm">
-        <table class="min-w-full">
+      <div class="bg-white border rounded shadow-sm overflow-hidden">
+        <table class="min-w-full text-sm">
           <thead>
             <tr class="border-b bg-gray-50">
               <th class="text-left px-6 py-3 font-semibold">Nama</th>
               <th class="text-left px-6 py-3 font-semibold">Position</th>
-              <th class="text-left px-6 py-3 font-semibold">Time</th>
+              <th class="text-left px-6 py-3 font-semibold">Department</th>
+              <th class="text-left px-6 py-3 font-semibold">Tanggal</th>
+              <th class="text-left px-6 py-3 font-semibold">Jam Masuk</th>
               <th class="text-left px-6 py-3 font-semibold">Status</th>
-              <th class="text-left px-6 py-3 font-semibold">Action</th>
+              <th class="text-left px-6 py-3 font-semibold text-center">Action</th>
             </tr>
           </thead>
+
           <tbody>
             <tr
               v-for="rec in attendances"
               :key="rec.id"
-              class="border-b hover:bg-gray-50"
+              class="border-b hover:bg-gray-50 transition"
             >
-              <td class="px-6 py-4">{{ rec.name }}</td>
-              <td class="px-6 py-4">{{ rec.position }}</td>
-              <td class="px-6 py-4">{{ rec.time }}</td>
-              <td class="px-6 py-4">{{ rec.status }}</td>
+              <td class="px-6 py-4">{{ rec.user?.name || '-' }}</td>
+              <td class="px-6 py-4">{{ rec.user?.role || '-' }}</td>
+              <td class="px-6 py-4">{{ rec.departmentName || '-' }}</td>
+              <td class="px-6 py-4">{{ formatDate(rec.date) }}</td>
+              <td class="px-6 py-4">{{ formatTime(rec.timeIn) }}</td>
               <td class="px-6 py-4">
+                <span
+                  :class="{
+                    'text-green-600 font-semibold': rec.status === 'PRESENT',
+                    'text-yellow-600 font-semibold': rec.status === 'LATE',
+                    'text-gray-500 font-semibold': rec.status === 'COMPLETED'
+                  }"
+                >
+                  {{ rec.status || '-' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-center">
                 <button
                   class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                   @click="openEdit(rec)"
@@ -62,9 +77,11 @@
                 </button>
               </td>
             </tr>
+
+            <!-- Kalau belum ada data -->
             <tr v-if="attendances.length === 0">
-              <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data kehadiran pekerja IT hari ini.
+              <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                Belum ada data kehadiran pekerja IT.
               </td>
             </tr>
           </tbody>
@@ -84,16 +101,17 @@
             <label class="block text-sm font-medium mb-1">Nama</label>
             <input
               readonly
-              :value="editingRecord?.name"
+              :value="editingRecord?.user?.name"
               class="w-full border px-3 py-2 rounded bg-gray-50"
             />
           </div>
           <div class="mb-3">
-            <label class="block text-sm font-medium mb-1">Time</label>
+            <label class="block text-sm font-medium mb-1">Jam Masuk</label>
             <input
-              v-model="editingRecord.time"
+              v-model="editingRecord.timeIn"
               required
               class="w-full border px-3 py-2 rounded"
+              type="time"
             />
           </div>
           <div class="mb-3">
@@ -129,131 +147,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
-import { useRuntimeConfig } from "#imports"
-import { useAuth } from "@/composables/useAuth"
+import { ref, onMounted } from "vue";
+import { useRuntimeConfig } from "#imports";
+import { useAuth } from "@/composables/useAuth";
 
-// runtime config
-const config = useRuntimeConfig()
-const apiBase = config.public?.apiBase ?? "http://localhost:3000"
+const config = useRuntimeConfig();
+const apiBase = config.public?.apiBase ?? "http://localhost:3000";
+const { user, loadUser } = useAuth();
 
-// auth
-const { user, loadUser } = useAuth()
+const attendances = ref<any[]>([]);
+const showModal = ref(false);
+const editingRecord = ref<any>(null);
 
-// tanggal hari ini
-const today = new Date()
-const pad = (n: number) => (n < 10 ? "0" + n : String(n))
-const displayDate = `Today ${pad(today.getDate())}-${pad(
-  today.getMonth() + 1
-)}-${today.getFullYear()}`
+// format tanggal hari ini
+const today = new Date();
+const pad = (n: number) => (n < 10 ? "0" + n : n);
+const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`;
 
-// tipe attendance row
-type AttendanceRow = {
-  id: string
-  userId: string
-  name: string
-  position: string
-  time: string
-  status: string
-  raw: any
+const getToken = () =>
+  typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
 }
 
-// state attendances
-const attendances = ref<AttendanceRow[]>([])
+function formatTime(timeStr: string | null) {
+  if (!timeStr) return "-";
+  const d = new Date(timeStr);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
-// modal
-const showModal = ref(false)
-const editingRecord = ref<AttendanceRow | null>(null)
-
-// ambil token
-const getToken = () =>
-  typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-// fetch attendance
+// ambil data dari backend
 const fetchAttendances = async () => {
   try {
-    const token = getToken()
+    const token = getToken();
     const res = await fetch(`${apiBase}/attendance`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    })
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
 
-    if (!res.ok) return
-    const data = await res.json().catch(() => [])
-
-    const deptId = user.value?.departmentId
-
-    // ✅ filter hanya pekerja (role = PEKERJA) dan departemen IT
+    const deptName = user.value?.departmentName ?? "";
     attendances.value = (data || [])
-      .filter(
-        (a: any) =>
-          a.user?.departmentId === deptId &&
-          a.user?.role === "PEKERJA"
-      )
-      .map((a: any) => {
-        const name = a.user?.name ?? a.user?.username ?? "Unknown"
-        const pos = a.user?.position ?? "-"
-        const t = a.timeIn ?? a.createdAt
-        let timeStr = ""
-        try {
-          timeStr = new Date(t).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          })
-        } catch {
-          timeStr = String(t ?? "")
-        }
-        return {
-          id: a.id,
-          userId: a.userId,
-          name,
-          position: pos,
-          time: timeStr,
-          status: a.status,
-          raw: a,
-        } as AttendanceRow
-      })
+      .filter((a: any) => a.departmentName === deptName && a.role === "PEKERJA")
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (err) {
-    console.error("fetchAttendances error", err)
+    console.error("fetchAttendances error:", err);
   }
-}
+};
 
-// fungsi tombol
 function markAllPresent() {
-  alert(
-    "Mark semua hadir khusus departemen IT → bisa POST ke /attendance/checkin dengan filter department."
-  )
+  alert("✅ Mark semua hadir untuk departemen IT. (Coming soon...)");
 }
 
-function openEdit(rec: AttendanceRow) {
-  editingRecord.value = { ...rec }
-  showModal.value = true
-}
-
-async function saveEdit() {
-  if (!editingRecord.value) return
-  const idx = attendances.value.findIndex(
-    (r) => r.id === editingRecord.value?.id
-  )
-  if (idx !== -1) {
-    attendances.value[idx].time = editingRecord.value.time
-    attendances.value[idx].status = editingRecord.value.status
-  }
-  // TODO: kirim PATCH ke API untuk update ke DB
-  closeModal()
+function openEdit(rec: any) {
+  editingRecord.value = { ...rec };
+  showModal.value = true;
 }
 
 function closeModal() {
-  showModal.value = false
-  editingRecord.value = null
+  showModal.value = false;
+  editingRecord.value = null;
 }
 
-// lifecycle
+async function saveEdit() {
+  if (!editingRecord.value) return;
+  const idx = attendances.value.findIndex(r => r.id === editingRecord.value.id);
+  if (idx !== -1) attendances.value[idx] = { ...editingRecord.value };
+  closeModal();
+}
+
 onMounted(async () => {
-  await loadUser()
-  await fetchAttendances()
-})
+  await loadUser();
+  await fetchAttendances();
+});
 </script>
