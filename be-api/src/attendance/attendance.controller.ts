@@ -1,25 +1,27 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
+import { CheckinDto } from './dto/checkin.dto';
+import { CheckoutDto } from './dto/checkout.dto';
 
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  // ✅ Endpoint checkin (scan QR)
+  // ✅ Check-In endpoint
   @Post('checkin')
-  async checkin(@Body() dto: any) {
+  async checkin(@Body() dto: CheckinDto) {
     return this.attendanceService.checkin(dto);
   }
 
-  // ✅ Endpoint ambil semua attendance
+  // ✅ Check-Out endpoint
+  @Post('checkout')
+  async checkout(@Body() dto: CheckoutDto) {
+    return this.attendanceService.checkout(dto);
+  }
+
+  // ✅ Get all attendance data
   @Get()
   async findAll() {
     return this.attendanceService.findAll();
-  }
-
-  // ✅ Endpoint checkout
-  @Post('checkout/:id')
-  async checkout(@Param('id') id: string) {
-    return this.attendanceService.checkout(id);
   }
 }

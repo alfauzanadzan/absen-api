@@ -1,8 +1,9 @@
-e<template>
+<template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col ">
-      <div class="flex items-center justify-center h-20 mb-6">
+    <aside class="w-60 bg-white p-6 flex flex-col border-r">
+      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
+        ADMIN
       </div>
 
       <nav class="flex flex-col space-y-2">
@@ -18,11 +19,9 @@ e<template>
 
     <!-- Main content -->
     <main class="flex-1 p-8 overflow-y-auto">
-      <!-- Header row -->
-      <div class="flex justify-between items-center mb-25">
-        <div>
-          <h1 class="text-3xl font-bold">EMPLOYEES</h1>
-        </div>
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">EMPLOYEES</h1>
 
         <div class="flex items-center gap-4">
           <button
@@ -36,24 +35,24 @@ e<template>
             class="bg-blue-500 text-white px-4 py-2 rounded font-medium hover:bg-blue-600 transition"
             @click="openAdd"
           >
-            Add Employees
+            Add Employee
           </button>
         </div>
       </div>
 
       <!-- Table -->
-      <div class="bg-white border-t border-b">
+      <div class="bg-white border rounded shadow-sm">
         <table class="min-w-full">
           <thead>
-            <tr class="border-b">
+            <tr class="border-b bg-gray-50">
               <th class="text-left px-6 py-4 font-semibold">Photo</th>
               <th class="text-left px-6 py-4 font-semibold">Nama</th>
               <th class="text-left px-6 py-4 font-semibold">Position</th>
-              <th class="text-left px-6 py-4 font-semibold">Status</th>
+              <th class="text-left px-6 py-4 font-semibold">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(emp, idx) in employees" :key="emp.id" class="border-b">
+            <tr v-for="emp in employees" :key="emp.id" class="border-b hover:bg-gray-50">
               <td class="px-6 py-4">
                 <img
                   :src="emp.photo || placeholderImage"
@@ -61,11 +60,8 @@ e<template>
                   class="h-12 w-12 rounded-full object-cover"
                 />
               </td>
-
               <td class="px-6 py-4 align-middle">{{ emp.name }}</td>
-
               <td class="px-6 py-4 align-middle">{{ emp.position }}</td>
-
               <td class="px-6 py-4 text-right">
                 <div class="inline-flex items-center gap-3">
                   <button
@@ -94,13 +90,15 @@ e<template>
       </div>
     </main>
 
-    <!-- Modal: Add / Edit Employee -->
+    <!-- Modal Add/Edit -->
     <div
       v-if="showModal"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     >
-      <div class="bg-white rounded-lg w-11/12 md:w-1/2 p-6">
-        <h3 class="text-lg font-semibold mb-4">{{ isEditing ? 'Edit' : 'Add' }} Employee</h3>
+      <div class="bg-white rounded-lg w-11/12 md:w-1/2 p-6 shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">
+          {{ isEditing ? 'Edit' : 'Add' }} Employee
+        </h3>
 
         <form @submit.prevent="saveEmployee">
           <div class="grid grid-cols-1 gap-4">
@@ -128,14 +126,26 @@ e<template>
               <label class="block text-sm font-medium mb-1">Foto</label>
               <input type="file" accept="image/*" @change="onFileChange" />
               <div v-if="employeeForm.photoPreview" class="mt-3">
-                <img :src="employeeForm.photoPreview" class="h-20 w-20 rounded-full object-cover" />
+                <img
+                  :src="employeeForm.photoPreview"
+                  class="h-20 w-20 rounded-full object-cover"
+                />
               </div>
             </div>
           </div>
 
           <div class="mt-6 flex justify-end gap-3">
-            <button type="button" class="px-4 py-2 rounded border" @click="closeModal">Batal</button>
-            <button type="submit" class="px-4 py-2 rounded bg-blue-500 text-white">
+            <button
+              type="button"
+              class="px-4 py-2 rounded border hover:bg-gray-100"
+              @click="closeModal"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
+            >
               Simpan
             </button>
           </div>
@@ -148,20 +158,13 @@ e<template>
 <script setup>
 import { ref, reactive } from 'vue'
 
-/** Placeholder image if employee has no photo */
-const placeholderImage = '/images/avatar-placeholder.png' // taruh file ini di public/images
+// Gambar default
+const placeholderImage = '/images/avatar-placeholder.png'
 
-/** Sample data - ganti / fetch dari API */
-const employees = ref([
-  {
-    id: 1,
-    name: 'Ozan',
-    position: 'FrontEnd',
-    photo: '/images/sample-ozan.jpg', // contoh path ke public/images
-  },
-  // tambah kalo perlu
-])
+// Data awal kosong
+const employees = ref([])
 
+// State modal
 const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref(null)
@@ -169,11 +172,12 @@ const editingId = ref(null)
 const employeeForm = reactive({
   name: '',
   position: '',
-  photoFile: null, // file object
-  photoPreview: null, // data URL
-  photo: null, // url/path setelah upload
+  photoFile: null,
+  photoPreview: null,
+  photo: null,
 })
 
+// Reset form
 function resetForm() {
   employeeForm.name = ''
   employeeForm.position = ''
@@ -184,13 +188,13 @@ function resetForm() {
   isEditing.value = false
 }
 
-/** Open modal for adding */
+// Tambah
 function openAdd() {
   resetForm()
   showModal.value = true
 }
 
-/** Open modal for editing an employee */
+// Edit
 function openEdit(emp) {
   resetForm()
   employeeForm.name = emp.name
@@ -202,18 +206,18 @@ function openEdit(emp) {
   showModal.value = true
 }
 
+// Tutup modal
 function closeModal() {
   showModal.value = false
-  // small delay to clear form (optional)
   setTimeout(() => resetForm(), 150)
 }
 
+// Upload foto
 function onFileChange(e) {
-  const file = e.target.files && e.target.files[0]
+  const file = e.target.files?.[0]
   if (!file) return
   employeeForm.photoFile = file
 
-  // preview
   const reader = new FileReader()
   reader.onload = (ev) => {
     employeeForm.photoPreview = ev.target.result
@@ -221,11 +225,8 @@ function onFileChange(e) {
   reader.readAsDataURL(file)
 }
 
-/** Save new or edited employee
- *  NOTE: replace client-side logic with API calls (upload file -> get url -> save)
- */
+// Simpan data
 function saveEmployee() {
-  // contoh sederhana: kalau ada file, simpan preview sebagai photo (di real app upload dulu)
   const photoUrl = employeeForm.photoPreview || employeeForm.photo || placeholderImage
 
   if (isEditing.value && editingId.value !== null) {
@@ -248,27 +249,21 @@ function saveEmployee() {
     })
   }
 
-  // TODO: di sini panggil API untuk upload file (jika ada) lalu simpan data di backend
-  // contoh: await api.post('/employees', formData)
-
   closeModal()
 }
 
-/** Hapus employee */
+// Hapus data
 function deleteEmployee(id) {
   if (!confirm('Yakin ingin menghapus employee ini?')) return
-  const idx = employees.value.findIndex((e) => e.id === id)
-  if (idx !== -1) employees.value.splice(idx, 1)
-
-  // TODO: panggil API delete: await api.delete(/employees/${id})
+  employees.value = employees.value.filter((e) => e.id !== id)
 }
 
-/** Import PDF placeholder */
+// Placeholder Import PDF
 function importPdf() {
-  alert('Fungsi Import PDF: implementasi tergantung requirement (upload file dan parsing).')
+  alert('Fitur Import PDF belum diimplementasikan.')
 }
 </script>
 
 <style scoped>
-/* tambahkan styling khusus jika perlu */
+/* Tambahan styling jika dibutuhkan */
 </style>

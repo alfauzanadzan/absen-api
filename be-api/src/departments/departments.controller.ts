@@ -1,19 +1,31 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { DepartmentsService, Department } from './departments.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { DepartmentsService } from './departments.service';
 
 @Controller('departments')
-@UseGuards(JwtAuthGuard)
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
+  // ✅ Ambil semua department
   @Get()
-  findAll(): Department[] {
+  findAll() {
     return this.departmentsService.findAll();
   }
 
+  // ✅ Ambil 1 department by ID
   @Get(':id')
-  findById(@Param('id') id: string): Department {
-    return this.departmentsService.findById(id);
+  findOne(@Param('id') id: string) {
+    return this.departmentsService.findOne(id);
+  }
+
+  // ✅ Ambil barcode by value (dipakai saat scan QR)
+  @Get('barcode/:value')
+  async findByBarcode(@Param('value') value: string) {
+    const barcode = await this.departmentsService.findByBarcode(value);
+
+    if (!barcode) {
+      throw new NotFoundException('Barcode tidak ditemukan');
+    }
+
+    return barcode; // ✅ hasil sudah include department
   }
 }

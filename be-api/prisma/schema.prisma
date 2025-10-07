@@ -50,11 +50,11 @@ model Attendance {
   id             String           @id @default(uuid())
   userId         String
   departmentId   String?
-  departmentName String?          // ✅ simpan snapshot nama departemen
-  date           DateTime         @default(now())
+  departmentName String?
+  date           DateTime         @default(now())   // tanggal absen
   timeIn         DateTime?
   timeOut        DateTime?
-  qrValue        String           @unique
+  qrValue        String           // ❌ hapus @unique
   role           UserRole         @default(PEKERJA)
   status         AttendanceStatus @default(PRESENT)
 
@@ -64,7 +64,11 @@ model Attendance {
   // RELATIONS
   user           User             @relation(fields: [userId], references: [id])
   department     Department?      @relation(fields: [departmentId], references: [id])
+
+  // ✅ tiap user cuma bisa punya 1 attendance record per hari
+  @@unique([userId, date])
 }
+
 
 
 model Department {
@@ -82,15 +86,14 @@ model Department {
 }
 
 model Barcode {
-  id           String      @id @default(uuid())
-  value        String      @unique
-  departmentId String      @unique   // ⬅️ bikin unique biar bisa dipake di upsert
-  latitude     Float
-  longitude    Float
+  id             String      @id @default(uuid())
+  value          String      @unique
+  departmentId   String      // 🔧 hapus @unique di sini
+  departmentName String?
+  latitude       Float
+  longitude      Float
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  // RELATIONS
-  department   Department  @relation(fields: [departmentId], references: [id])
+  department     Department  @relation(fields: [departmentId], references: [id])
 }

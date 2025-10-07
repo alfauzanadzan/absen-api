@@ -47,18 +47,21 @@
       <!-- Clock + Scan Mode -->
       <div class="flex flex-col items-center mt-20">
         <p class="text-8xl font-bold">{{ time }}</p>
-        <p class="mt-4 text-gray-600">Pilih mode check-in / check-out dan scan barcode</p>
+        <p class="mt-4 text-gray-600">
+          Pilih mode Check-in / Check-out untuk melakukan absensi via barcode
+        </p>
 
         <div class="flex gap-4 mt-8">
+          <!-- ✅ Ganti path sesuai folder kaprog-marketing -->
           <router-link
-            to="/kaprog/checkin"
+            to="/kaprog-marketing/checkin"
             class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
           >
             Check In (Scan)
           </router-link>
 
           <router-link
-            to="/kaprog/checkout"
+            to="/kaprog-marketing/checkout"
             class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
           >
             Check Out (Scan)
@@ -100,5 +103,5 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* styling khusus dashboard */
+/* Styling opsional */
 </style>

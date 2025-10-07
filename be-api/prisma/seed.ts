@@ -2,11 +2,11 @@ import { PrismaClient, UserRole } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
 import * as QRCode from 'qrcode'
 import * as fs from 'fs'
-import { v4 as uuidv4 } from 'uuid'
 
 const prisma = new PrismaClient()
 
 async function main() {
+  console.log('🚀 Mulai seeding database...')
   const password = await bcrypt.hash('123456', 10)
 
   // ========================
@@ -24,38 +24,44 @@ async function main() {
     create: { name: 'Marketing', code: 'MKT01' },
   })
 
+  console.log('✅ Department siap')
+
   // ========================
   // BARCODES
   // ========================
   const barcodes = [
-    { departmentId: itDept.id, latitude: -6.200000, longitude: 106.816666 },
-    { departmentId: marketingDept.id, latitude: -6.210000, longitude: 106.820000 },
+    {
+      value: 'QR-IT-001',
+      departmentId: itDept.id,
+      departmentName: itDept.name,
+      latitude: -6.200000,
+      longitude: 106.816666,
+    },
+    {
+      value: 'QR-MKT-001',
+      departmentId: marketingDept.id,
+      departmentName: marketingDept.name,
+      latitude: -6.210000,
+      longitude: 106.820000,
+    },
   ]
 
   const qrDir = './prisma/qrcodes'
   if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true })
 
   for (const data of barcodes) {
-    const value = uuidv4()
-
-    // Upsert: 1 barcode per department
     const barcode = await prisma.barcode.upsert({
-      where: { departmentId: data.departmentId },
+      where: { value: data.value }, // ✅ pakai unique field `value`
       update: {
-        value,
         latitude: data.latitude,
         longitude: data.longitude,
+        departmentName: data.departmentName,
       },
-      create: {
-        value,
-        departmentId: data.departmentId,
-        latitude: data.latitude,
-        longitude: data.longitude,
-      },
+      create: data,
     })
 
-    // Save QR file
-    const qrPath = `${qrDir}/${barcode.id}.png`
+    // ✅ Generate QR file pakai value-nya
+    const qrPath = `${qrDir}/${barcode.value}.png`
     await QRCode.toFile(qrPath, barcode.value)
 
     console.log(`✅ Barcode ${barcode.value} saved at ${qrPath}`)
@@ -89,7 +95,7 @@ async function main() {
       name: 'Alhizam Kaprog',
       email: 'alhizam@company.com',
       departmentId: itDept.id,
-      departmentName: itDept.name, // snapshot
+      departmentName: itDept.name,
     },
   })
 
@@ -138,12 +144,13 @@ async function main() {
     },
   })
 
-  console.log('✅ Seed selesai — Department, Barcode & User siap!')
+  console.log('✅ Users siap')
+  console.log('🎉 Seed selesai — Department, Barcode, dan User berhasil dibuat!')
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('❌ Seed gagal:', e)
     process.exit(1)
   })
   .finally(async () => {

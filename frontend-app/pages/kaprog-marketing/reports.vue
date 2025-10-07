@@ -17,16 +17,16 @@
     <main class="flex-1 p-8 overflow-y-auto">
       <h1 class="text-3xl font-bold mb-6">REPORTS</h1>
 
-      <!-- Filter row: report type + date -->
+      <!-- Filter row -->
       <div class="flex items-center gap-4 mb-6">
-        <select v-model="reportType" class="border px-3 py-2 flex-1">
+        <select v-model="reportType" class="border px-3 py-2 flex-1 rounded">
           <option value="monthly">Monthly Report</option>
           <option value="weekly">Weekly Report</option>
           <option value="daily">Daily Report</option>
         </select>
 
         <div class="flex-1 text-right">
-          <input readonly :value="displayDate" class="w-1/2 border px-3 py-2 text-right" />
+          <input readonly :value="displayDate" class="w-1/2 border px-3 py-2 text-right rounded" />
         </div>
       </div>
 
@@ -75,10 +75,7 @@
     </main>
 
     <!-- Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    >
+    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div class="bg-white rounded-lg w-11/12 md:w-2/3 p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-semibold">Detail: {{ modalRow?.name }}</h3>
@@ -86,9 +83,7 @@
         </div>
 
         <div class="mb-4">
-          <p class="text-sm text-gray-600">
-            Total: <strong>{{ modalRow?.count }}</strong>
-          </p>
+          <p class="text-sm text-gray-600">Total: <strong>{{ modalRow?.count }}</strong></p>
         </div>
 
         <!-- List -->
@@ -111,24 +106,15 @@
               </tr>
 
               <tr v-if="modalList.length === 0">
-                <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                  Belum ada detail.
-                </td>
+                <td colspan="4" class="px-4 py-6 text-center text-gray-500">Belum ada detail.</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div class="mt-4 flex justify-end gap-3">
-          <button class="px-4 py-2 rounded border" @click="closeModal">
-            Close
-          </button>
-          <button
-            class="px-4 py-2 rounded bg-blue-500 text-white"
-            @click="downloadModalCSV"
-          >
-            Download CSV
-          </button>
+          <button class="px-4 py-2 rounded border" @click="closeModal">Close</button>
+          <button class="px-4 py-2 rounded bg-blue-500 text-white" @click="downloadModalCSV">Download CSV</button>
         </div>
       </div>
     </div>
@@ -141,9 +127,7 @@ import { ref, onMounted } from 'vue'
 /* tanggal display */
 const today = new Date()
 const pad = (n) => (n < 10 ? '0' + n : n)
-const displayDate = `Today ${pad(today.getDate())}-${pad(
-  today.getMonth() + 1
-)}-${today.getFullYear()}`
+const displayDate = `Today ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
 
 /* report type select */
 const reportType = ref('monthly')
@@ -222,25 +206,15 @@ function downloadModalCSV() {
   const rows = modalList.value.map((r) => [r.name, r.status, r.time || ''])
   const csvContent =
     [headers, ...rows]
-      .map((r) =>
-        r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')
-      )
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
       .join('\n')
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `${
-    modalRow.value?.key || 'report'
-  }_${reportType.value}_${pad(today.getDate())}${pad(
-    today.getMonth() + 1
-  )}${today.getFullYear()}.csv`
+  a.download = `${modalRow.value?.key || 'report'}_${reportType.value}_${pad(today.getDate())}${pad(today.getMonth() + 1)}${today.getFullYear()}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
 </script>
-
-<style scoped>
-/* tambahan style opsional */
-</style>

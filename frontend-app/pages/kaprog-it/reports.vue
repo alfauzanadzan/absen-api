@@ -2,42 +2,29 @@
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col border-r">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">KAPROG</h1>
+      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl text-blue-600">
+        KAPROG IT
       </div>
 
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-200">
-          Dashboard
-        </a>
-        <a href="/kaprog-it/profilkaprog" class="p-2 rounded hover:bg-gray-200">
-          Profile
-        </a>
-        <a href="/kaprog-it/employees" class="p-2 rounded hover:bg-gray-200">
-          Employees
-        </a>
-        <a href="/kaprog-it/attendance" class="p-2 rounded hover:bg-gray-200">
-          Attendance
-        </a>
-        <a
-          href="/kaprog-it/reports"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
-        >
-          Reports
-        </a>
+        <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
+        <a href="/kaprog-it/profilkaprog" class="p-2 rounded hover:bg-gray-100">Profile</a>
+        <a href="/kaprog-it/employees" class="p-2 rounded hover:bg-gray-100">Employees</a>
+        <a href="/kaprog-it/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
+        <a href="/kaprog-it/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
       </nav>
     </aside>
 
     <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto">
-      <h1 class="text-3xl font-bold mb-8">REPORTS</h1>
+      <h1 class="text-3xl font-bold mb-8">Reports - Kehadiran Pekerja</h1>
 
       <!-- Filter -->
       <div class="flex items-center gap-4 mb-6">
         <select v-model="reportType" class="border px-3 py-2 flex-1 rounded">
-          <option value="monthly">Monthly Report</option>
-          <option value="weekly">Weekly Report</option>
           <option value="daily">Daily Report</option>
+          <option value="weekly">Weekly Report</option>
+          <option value="monthly">Monthly Report</option>
         </select>
 
         <div class="flex-1 text-right">
@@ -55,8 +42,9 @@
           <thead class="bg-gray-50">
             <tr class="border-b">
               <th class="text-left px-6 py-3 font-semibold">Nama</th>
-              <th class="text-center px-6 py-3 font-semibold">Employees</th>
-              <th class="text-right px-6 py-3 font-semibold">Action</th>
+              <th class="text-center px-6 py-3 font-semibold">Status</th>
+              <th class="text-center px-6 py-3 font-semibold">Check-in</th>
+              <th class="text-center px-6 py-3 font-semibold">Checkout</th>
             </tr>
           </thead>
 
@@ -67,205 +55,126 @@
               class="border-b hover:bg-gray-50"
             >
               <td class="px-6 py-4">{{ row.name }}</td>
-              <td class="px-6 py-4 text-center">{{ row.count }}</td>
-              <td class="px-6 py-4 text-right">
-                <div class="flex justify-end items-center gap-3">
-                  <button
-                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                    @click="viewRow(row)"
-                  >
-                    View
-                  </button>
-                  <button
-                    class="bg-gray-100 border px-3 py-2 rounded hover:bg-gray-200 transition"
-                    @click="exportRow(row)"
-                  >
-                    Export CSV
-                  </button>
-                </div>
+              <td class="px-6 py-4 text-center">
+                <span
+                  class="px-2 py-1 rounded text-xs font-semibold"
+                  :class="{
+                    'bg-green-100 text-green-700': row.status === 'PRESENT',
+                    'bg-yellow-100 text-yellow-700': row.status === 'LATE',
+                    'bg-gray-100 text-gray-700': row.status === 'COMPLETED'
+                  }"
+                >
+                  {{ row.status }}
+                </span>
               </td>
+              <td class="px-6 py-4 text-center">{{ row.checkin || '-' }}</td>
+              <td class="px-6 py-4 text-center">{{ row.checkout || '-' }}</td>
             </tr>
 
             <tr v-if="reportRows.length === 0">
-              <td colspan="3" class="px-6 py-8 text-center text-gray-500">
-                Tidak ada data.
+              <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                Tidak ada data kehadiran pekerja hari ini.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </main>
 
-    <!-- Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    >
-      <div class="bg-white rounded-lg w-11/12 md:w-2/3 p-6 shadow-lg">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Detail: {{ modalRow?.name }}</h3>
-          <button class="text-gray-600 hover:text-black" @click="closeModal">
-            ✕
-          </button>
-        </div>
-
-        <div class="mb-4">
-          <p class="text-sm text-gray-600">
-            Total: <strong>{{ modalRow?.count }}</strong>
-          </p>
-        </div>
-
-        <!-- List -->
-        <div class="max-h-72 overflow-y-auto border rounded">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="text-left px-4 py-2">No</th>
-                <th class="text-left px-4 py-2">Nama</th>
-                <th class="text-left px-4 py-2">Status</th>
-                <th class="text-left px-4 py-2">Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(item, i) in modalList"
-                :key="i"
-                class="border-t hover:bg-gray-50"
-              >
-                <td class="px-4 py-2">{{ i + 1 }}</td>
-                <td class="px-4 py-2">{{ item.name }}</td>
-                <td class="px-4 py-2">{{ item.status }}</td>
-                <td class="px-4 py-2">{{ item.time || '-' }}</td>
-              </tr>
-
-              <tr v-if="modalList.length === 0">
-                <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                  Belum ada detail.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mt-4 flex justify-end gap-3">
-          <button
-            class="px-4 py-2 rounded border hover:bg-gray-100"
-            @click="closeModal"
-          >
-            Close
-          </button>
-          <button
-            class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
-            @click="downloadModalCSV"
-          >
-            Download CSV
-          </button>
-        </div>
+      <!-- Button Export -->
+      <div class="mt-6 text-right">
+        <button
+          class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition"
+          @click="downloadCSV"
+        >
+          Export CSV
+        </button>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue"
+import { useRuntimeConfig } from "#imports"
+import { useAuth } from "@/composables/useAuth"
 
-// Tanggal hari ini
+const config = useRuntimeConfig()
+const apiBase = config.public?.apiBase ?? "http://localhost:3000"
+const { user, loadUser } = useAuth()
+
+// --- DATE ---
 const today = new Date()
-const pad = (n: number) => (n < 10 ? "0" + n : n)
+const pad = (n: number) => (n < 10 ? "0" + n : String(n))
 const displayDate = `Today ${pad(today.getDate())}-${pad(
   today.getMonth() + 1
 )}-${today.getFullYear()}`
 
-// State
-const reportType = ref("monthly")
+// --- STATE ---
+const reportType = ref("daily")
+const reportRows = ref<any[]>([])
 
-const reportRows = ref([
-  { key: "attendance", name: "Attendance", count: 12 },
-  { key: "present", name: "Present", count: 3 },
-  { key: "late", name: "Late", count: 5 },
-  { key: "onleave", name: "On Leave", count: 5 },
-])
+// --- FETCH ATTENDANCE DATA ---
+const fetchReport = async () => {
+  await loadUser()
+  try {
+    const res = await fetch(`${apiBase}/attendance`)
+    const data = await res.json()
 
-const showModal = ref(false)
-const modalRow = ref<any>(null)
-const modalList = ref<any[]>([])
-
-// Fetch data ringkasan (contoh)
-onMounted(async () => {
-  // TODO: fetch summary report dari API sesuai reportType & date
-})
-
-// Lihat detail per kategori
-function viewRow(row: any) {
-  modalRow.value = row
-  showModal.value = true
-
-  if (row.key === "present") {
-    modalList.value = [
-      { name: "Ozan", status: "Present", time: "07:40 AM" },
-      { name: "Lina", status: "Present", time: "07:50 AM" },
-      { name: "Budi", status: "Present", time: "08:00 AM" },
-    ]
-  } else if (row.key === "late") {
-    modalList.value = [
-      { name: "Andi", status: "Late", time: "09:05 AM" },
-      { name: "Sari", status: "Late", time: "08:30 AM" },
-      { name: "Rina", status: "Late", time: "08:45 AM" },
-    ]
-  } else if (row.key === "onleave") {
-    modalList.value = [
-      { name: "Titin", status: "On Leave", time: "" },
-      { name: "Dedi", status: "On Leave", time: "" },
-    ]
-  } else {
-    modalList.value = [
-      { name: "Ozan", status: "Present", time: "07:40 AM" },
-      { name: "Lina", status: "Present", time: "07:50 AM" },
-      { name: "Budi", status: "Present", time: "08:00 AM" },
-      { name: "Andi", status: "Late", time: "09:05 AM" },
-      { name: "Titin", status: "On Leave", time: "" },
-    ]
+    // hanya tampilkan pekerja
+    reportRows.value = data
+      .filter((a: any) => a.user?.role === "PEKERJA")
+      .map((a: any) => ({
+        name: a.user?.username || "Unknown",
+        status: a.status || "PRESENT",
+        checkin: a.checkinTime
+          ? new Date(a.checkinTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          : "-",
+        checkout: a.checkoutTime
+          ? new Date(a.checkoutTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          : "-",
+      }))
+  } catch (err) {
+    console.error("fetchReport error:", err)
   }
 }
 
-function closeModal() {
-  showModal.value = false
-  modalRow.value = null
-  modalList.value = []
-}
-
-// Export CSV
-function exportRow(row: any) {
-  viewRow(row)
-  setTimeout(() => downloadModalCSV(), 100)
-}
-
-function downloadModalCSV() {
-  if (!modalList.value.length) {
-    alert("Tidak ada data untuk di-export.")
+// --- EXPORT CSV ---
+function downloadCSV() {
+  if (!reportRows.value.length) {
+    alert("Tidak ada data untuk diekspor.")
     return
   }
 
-  const headers = ["Name", "Status", "Time"]
-  const rows = modalList.value.map((r) => [r.name, r.status, r.time || ""])
+  const headers = ["Name", "Status", "Check-in", "Checkout"]
+  const rows = reportRows.value.map((r) => [
+    r.name,
+    r.status,
+    r.checkin || "-",
+    r.checkout || "-",
+  ])
   const csvContent = [headers, ...rows]
-    .map((r) =>
-      r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")
-    )
+    .map((r) => r.map((c) => `"${String(c)}"`).join(","))
     .join("\n")
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `${modalRow.value?.key || "report"}_${reportType.value}_${pad(
-    today.getDate()
-  )}${pad(today.getMonth() + 1)}${today.getFullYear()}.csv`
+  a.download = `report_pekerja_${pad(today.getDate())}${pad(
+    today.getMonth() + 1
+  )}${today.getFullYear()}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
-</script>
 
-<style scoped>
-/* tambahan style custom jika perlu */
-</style>
+// --- LIFECYCLE ---
+onMounted(fetchReport)
+</script>

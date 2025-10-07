@@ -64,7 +64,7 @@
             </tr>
             <tr v-if="attendances.length === 0">
               <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data kehadiran Pekerja Anda hari ini.
+                Belum ada data kehadiran pekerja IT hari ini.
               </td>
             </tr>
           </tbody>
@@ -184,8 +184,14 @@ const fetchAttendances = async () => {
     const data = await res.json().catch(() => [])
 
     const deptId = user.value?.departmentId
+
+    // ✅ filter hanya pekerja (role = PEKERJA) dan departemen IT
     attendances.value = (data || [])
-      .filter((a: any) => a.user?.departmentId === deptId)
+      .filter(
+        (a: any) =>
+          a.user?.departmentId === deptId &&
+          a.user?.role === "PEKERJA"
+      )
       .map((a: any) => {
         const name = a.user?.name ?? a.user?.username ?? "Unknown"
         const pos = a.user?.position ?? "-"
@@ -218,7 +224,7 @@ const fetchAttendances = async () => {
 // fungsi tombol
 function markAllPresent() {
   alert(
-    "Mark semua hadir khusus departemen ini → bisa POST ke /attendance/checkin dengan filter department."
+    "Mark semua hadir khusus departemen IT → bisa POST ke /attendance/checkin dengan filter department."
   )
 }
 

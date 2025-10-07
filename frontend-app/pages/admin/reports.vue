@@ -1,18 +1,18 @@
 <template>
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
-<aside class="w-59 bg-white p-6 flex flex-col">
-      <!-- Logo -->
-      <div class="flex items-center justify-center h-20 mb-6">
+    <aside class="w-59 bg-white p-6 flex flex-col border-r">
+      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl">
+        ADMIN
       </div>
-      <!-- Menu -->
+
       <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-400">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-400">Employees</a>
-        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-400">Schedule</a>
+        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
+        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-100">Profile</a>
+        <a href="/admin/employees" class="p-2 rounded hover:bg-gray-100">Employees</a>
+        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-100">Add Account</a>
+        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
+        <a href="/admin/schedule" class="p-2 rounded hover:bg-gray-100">Schedule</a>
         <a href="/admin/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
       </nav>
     </aside>
@@ -72,7 +72,7 @@
 
             <tr v-if="reportRows.length === 0">
               <td colspan="3" class="px-6 py-8 text-center text-gray-500">
-                Tidak ada data.
+                Tidak ada data laporan.
               </td>
             </tr>
           </tbody>
@@ -81,8 +81,11 @@
     </main>
 
     <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="bg-white rounded-lg w-11/12 md:w-2/3 p-6">
+    <div
+      v-if="showModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    >
+      <div class="bg-white rounded-lg w-11/12 md:w-2/3 p-6 shadow-lg">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-semibold">Detail: {{ modalRow?.name }}</h3>
           <button class="text-gray-600 hover:text-black" @click="closeModal">✕</button>
@@ -116,7 +119,7 @@
 
               <tr v-if="modalList.length === 0">
                 <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                  Belum ada detail.
+                  Tidak ada detail laporan.
                 </td>
               </tr>
             </tbody>
@@ -125,7 +128,10 @@
 
         <div class="mt-4 flex justify-end gap-3">
           <button class="px-4 py-2 rounded border" @click="closeModal">Close</button>
-          <button class="px-4 py-2 rounded bg-blue-500 text-white" @click="downloadModalCSV">
+          <button
+            class="px-4 py-2 rounded bg-blue-500 text-white"
+            @click="downloadModalCSV"
+          >
             Download CSV
           </button>
         </div>
@@ -135,62 +141,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from "vue"
 
+// --- State utama ---
 const today = new Date()
-const pad = (n) => (n < 10 ? '0' + n : n)
+const pad = (n) => (n < 10 ? "0" + n : n)
 const displayDate = `Today ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
+const reportType = ref("monthly")
 
-const reportType = ref('monthly')
-const reportRows = ref([
-  { key: 'attendance', name: 'Attendance', count: 12 },
-  { key: 'present', name: 'Present', count: 3 },
-  { key: 'late', name: 'Late', count: 5 },
-  { key: 'onleave', name: 'On Leave', count: 5 },
-])
+// Data kosong, nanti bisa diisi dari API NestJS
+const reportRows = ref([])
 
+// Modal detail
 const showModal = ref(false)
 const modalRow = ref(null)
 const modalList = ref([])
 
 onMounted(async () => {
-  // Contoh fetch ringkasan dari API Nest
+  // Contoh: fetch data laporan dari backend
   // const res = await $fetch(`/api/reports?type=${reportType.value}`)
   // reportRows.value = res.rows
 })
 
+// Fungsi tampil modal detail
 async function viewRow(row) {
   modalRow.value = row
   showModal.value = true
 
-  // Contoh fetch detail dari API Nest
+  // Contoh fetch detail dari backend
   // modalList.value = await $fetch(`/api/reports/${row.key}?date=...`)
-
-  // Data demo
-  if (row.key === 'present') {
-    modalList.value = [
-      { name: 'Ozan', status: 'Present', time: '07:40 AM' },
-      { name: 'Lina', status: 'Present', time: '07:50 AM' },
-    ]
-  } else if (row.key === 'late') {
-    modalList.value = [
-      { name: 'Andi', status: 'Late', time: '09:05 AM' },
-      { name: 'Sari', status: 'Late', time: '08:30 AM' },
-    ]
-  } else {
-    modalList.value = [
-      { name: 'Ozan', status: 'Present', time: '07:40 AM' },
-      { name: 'Titin', status: 'On Leave', time: '-' },
-    ]
-  }
+  modalList.value = [] // Kosong dulu
 }
 
+// Tutup modal
 function closeModal() {
   showModal.value = false
   modalRow.value = null
   modalList.value = []
 }
 
+// Export CSV
 function exportRow(row) {
   viewRow(row)
   setTimeout(() => downloadModalCSV(), 100)
@@ -198,20 +188,21 @@ function exportRow(row) {
 
 function downloadModalCSV() {
   if (!modalList.value.length) {
-    alert('Tidak ada data untuk di-export.')
+    alert("Tidak ada data untuk di-export.")
     return
   }
-  const headers = ['Name', 'Status', 'Time']
-  const rows = modalList.value.map((r) => [r.name, r.status, r.time || ''])
-  const csvContent = [headers, ...rows]
-    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const headers = ["Name", "Status", "Time"]
+  const rows = modalList.value.map((r) => [r.name, r.status, r.time || ""])
+  const csvContent = [headers, ...rows]
+    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+    .join("\n")
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
+  const a = document.createElement("a")
   a.href = url
-  a.download = `${modalRow.value?.key || 'report'}_${reportType.value}_${pad(
+  a.download = `${modalRow.value?.key || "report"}_${reportType.value}_${pad(
     today.getDate()
   )}${pad(today.getMonth() + 1)}${today.getFullYear()}.csv`
   a.click()
