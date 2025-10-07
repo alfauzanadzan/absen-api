@@ -42,24 +42,30 @@ const avatarPreview = ref<string | null>(null)
 // ===== Fetch Data =====
 const fetchAccounts = async () => {
   try {
-    const res = await fetch('http://localhost:3000/users', {
+    const res = await fetch(`http://localhost:3000/users`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
     accounts.value = await res.json()
   } catch (err) {
-    console.error('Gagal ambil users:', err)
+    console.error('❌ Gagal ambil users:', err)
   }
 }
 
 const fetchDepartments = async () => {
   try {
-    const res = await fetch('http://localhost:3000/departments', {
+    const res = await fetch(`http://localhost:3000/departments`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
     const data = await res.json()
+<<<<<<< HEAD
     departments.value = data.filter((d: Department) => d.name === 'IT' || d.name === 'Marketing')
   } catch (err) {
     console.error('Gagal ambil departemen, menggunakan data default:', err)
+=======
+    departments.value = data.filter((d: Department) => ['IT', 'Marketing'].includes(d.name))
+  } catch (err) {
+    console.error('❌ Gagal ambil departemen:', err)
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
     departments.value = [
       { id: '1', name: 'IT' },
       { id: '2', name: 'Marketing' },
@@ -67,8 +73,8 @@ const fetchDepartments = async () => {
   }
 }
 
-onMounted(() => {
-  if (typeof window !== 'undefined') loadUser()
+onMounted(async () => {
+  await loadUser()
   fetchAccounts()
   fetchDepartments()
 })
@@ -127,7 +133,11 @@ const handleAvatarChange = (e: Event) => {
     const reader = new FileReader()
     reader.onload = () => {
       avatarPreview.value = reader.result as string
+<<<<<<< HEAD
       form.avatar = reader.result as string // simpan base64 ke form.avatar
+=======
+      form.avatar = reader.result as string
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
     }
     reader.readAsDataURL(file)
   }
@@ -145,44 +155,50 @@ const save = async () => {
       username: form.username,
       name: form.name,
       role: form.role,
+<<<<<<< HEAD
       avatar: form.avatar || null, // ✅ kirim avatar
+=======
+      avatar: form.avatar || null,
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
     }
 
-    if (form.role === 'KAPROG') {
+    if (form.role === 'KAPROG' || form.role === 'PEKERJA') {
       if (!form.departmentName) {
-        alert('❌ Departemen wajib dipilih untuk Kaprog!')
+        alert('❌ Departemen wajib dipilih!')
         return
       }
       payload.departmentName = form.departmentName
     }
+
     if (form.role === 'PEKERJA') {
       if (!form.position) {
-        alert('❌ Position wajib diisi untuk Pekerja!')
+        alert('❌ Position wajib diisi!')
         return
       }
       payload.position = form.position
-      if (!form.departmentName) {
-        alert('❌ Departemen wajib dipilih untuk Pekerja!')
-        return
-      }
-      payload.departmentName = form.departmentName
     }
+
+    const token = localStorage.getItem('token')
 
     if (editing.value) {
       await fetch(`http://localhost:3000/users/${editing.value.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       })
     } else {
-      await fetch('http://localhost:3000/users', {
+      await fetch(`http://localhost:3000/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+<<<<<<< HEAD
           Authorization: `Bearer ${localStorage.getItem('token')}`,
+=======
+          Authorization: `Bearer ${token}`,
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
         },
         body: JSON.stringify({
           ...payload,
@@ -195,7 +211,7 @@ const save = async () => {
     await fetchAccounts()
     showModal.value = false
   } catch (err) {
-    console.error('Gagal simpan akun:', err)
+    console.error('❌ Gagal simpan akun:', err)
   }
 }
 
@@ -209,7 +225,7 @@ const remove = async (acct: Account) => {
     })
     await fetchAccounts()
   } catch (err) {
-    console.error('Gagal hapus akun:', err)
+    console.error('❌ Gagal hapus akun:', err)
   }
 }
 </script>
@@ -271,6 +287,7 @@ const remove = async (acct: Account) => {
           </thead>
           <tbody>
             <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
+<<<<<<< HEAD
               <td class="p-4">
                 <img
                   v-if="acct.avatar"
@@ -281,6 +298,21 @@ const remove = async (acct: Account) => {
                   ?
                 </div>
               </td>
+=======
+             <td class="p-4">
+  <div class="w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden bg-gray-100">
+    <img
+      v-if="acct.avatar"
+      :src="acct.avatar"
+      class="w-full h-full object-cover"
+    />
+    <span v-else class="text-gray-600 font-bold">
+      {{ acct.name?.charAt(0)?.toUpperCase() || acct.username.charAt(0).toUpperCase() }}
+    </span>
+  </div>
+</td>
+
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
               <td class="p-4">{{ acct.username }}</td>
               <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4">{{ acct.email }}</td>
@@ -307,14 +339,23 @@ const remove = async (acct: Account) => {
               </td>
             </tr>
             <tr v-if="filtered.length === 0">
+<<<<<<< HEAD
               <td colspan="8" class="p-8 text-center text-gray-500">Tidak ada akun ditemukan.</td>
+=======
+              <td colspan="8" class="p-8 text-center text-gray-500">
+                Tidak ada akun ditemukan.
+              </td>
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Modal -->
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div
+        v-if="showModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      >
         <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
           <div class="flex items-center justify-between">
             <h3 class="text-xl font-semibold">{{ editing ? 'Edit Akun' : 'Tambah Akun' }}</h3>
@@ -322,6 +363,7 @@ const remove = async (acct: Account) => {
           </div>
 
           <form @submit.prevent="save" class="mt-4 space-y-3">
+<<<<<<< HEAD
             <div class="flex items-center gap-3">
               <img
                 v-if="avatarPreview"
@@ -331,6 +373,25 @@ const remove = async (acct: Account) => {
               <div v-else class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">?</div>
               <input type="file" accept="image/*" @change="handleAvatarChange" class="text-sm" />
             </div>
+=======
+           <div class="flex items-center gap-3">
+  <div class="w-16 h-16 rounded-full border flex items-center justify-center overflow-hidden bg-gray-100">
+    <img
+      v-if="avatarPreview"
+      :src="avatarPreview"
+      class="w-full h-full object-cover"
+    />
+    <span
+      v-else
+      class="text-gray-600 font-bold text-2xl"
+    >
+      {{ form.name?.charAt(0)?.toUpperCase() || form.username.charAt(0).toUpperCase() }}
+    </span>
+  </div>
+  <input type="file" accept="image/*" @change="handleAvatarChange" class="text-sm" />
+</div>
+
+>>>>>>> 6ad833014b606949edd96a80059999e825d321ef
 
             <div>
               <label class="block text-sm text-gray-600 mb-1">Username</label>
@@ -377,7 +438,9 @@ const remove = async (acct: Account) => {
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-              <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">Batal</button>
+              <button type="button" @click="showModal = false" class="px-4 py-2 border rounded">
+                Batal
+              </button>
               <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
                 {{ editing ? 'Update' : 'Simpan' }}
               </button>
