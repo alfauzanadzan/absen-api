@@ -2,7 +2,7 @@
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
+      <div class="flex items-center justify-center h-20 mb-6">
         <h1 class="text-lg font-bold text-blue-600">KAPROG IT</h1>
       </div>
       <nav class="flex flex-col space-y-2">
@@ -19,7 +19,10 @@
 
       <!-- Filter -->
       <div class="flex items-center gap-4 mb-6">
-        <select v-model="reportType" class="border px-3 py-2 flex-1 rounded">
+        <select
+          v-model="reportType"
+          class="border px-3 py-2 flex-1 rounded"
+        >
           <option value="daily">Daily Report</option>
           <option value="weekly">Weekly Report</option>
           <option value="monthly">Monthly Report</option>
@@ -59,7 +62,8 @@
                   :class="{
                     'bg-green-100 text-green-700': row.status === 'PRESENT',
                     'bg-yellow-100 text-yellow-700': row.status === 'LATE',
-                    'bg-gray-100 text-gray-700': row.status === 'COMPLETED'
+                    'bg-gray-100 text-gray-700': row.status === 'COMPLETED',
+                    'bg-red-100 text-red-700': row.status === 'ABSENT'
                   }"
                 >
                   {{ row.status }}
@@ -71,14 +75,14 @@
 
             <tr v-if="reportRows.length === 0">
               <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                Tidak ada data kehadiran pekerja hari ini.
+                Tidak ada data kehadiran pekerja.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Button Export -->
+      <!-- Export -->
       <div class="mt-6 text-right">
         <button
           class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition"
@@ -92,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, watch } from "vue"
 import { useRuntimeConfig } from "#imports"
 import { useAuth } from "@/composables/useAuth"
 
@@ -115,7 +119,8 @@ const reportRows = ref<any[]>([])
 const fetchReport = async () => {
   await loadUser()
   try {
-    const res = await fetch(`${apiBase}/attendance`)
+    const res = await fetch(`${apiBase}/attendance/reports?type=${reportType.value}`)
+    if (!res.ok) throw new Error("Gagal mengambil data laporan.")
     const data = await res.json()
 
     // hanya tampilkan pekerja
@@ -123,7 +128,7 @@ const fetchReport = async () => {
       .filter((a: any) => a.user?.role === "PEKERJA")
       .map((a: any) => ({
         name: a.user?.username || "Unknown",
-        status: a.status || "PRESENT",
+        status: a.status?.toUpperCase() || "PRESENT",
         checkin: a.checkinTime
           ? new Date(a.checkinTime).toLocaleTimeString([], {
               hour: "2-digit",
@@ -141,8 +146,12 @@ const fetchReport = async () => {
       }))
   } catch (err) {
     console.error("fetchReport error:", err)
+    reportRows.value = []
   }
 }
+
+// --- WATCH FILTER TYPE ---
+watch(reportType, fetchReport)
 
 // --- EXPORT CSV ---
 function downloadCSV() {
@@ -151,7 +160,7 @@ function downloadCSV() {
     return
   }
 
-  const headers = ["Name", "Status", "Check-in", "Checkout"]
+  const headers = ["Nama", "Status", "Check-in", "Checkout"]
   const rows = reportRows.value.map((r) => [
     r.name,
     r.status,
@@ -166,7 +175,7 @@ function downloadCSV() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `report_pekerja_${pad(today.getDate())}${pad(
+  a.download = `laporan_pekerja_${reportType.value}_${pad(today.getDate())}${pad(
     today.getMonth() + 1
   )}${today.getFullYear()}.csv`
   a.click()
