@@ -1,35 +1,34 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator'
+import { UserRole } from '@prisma/client'
 
 export class CreateUserDto {
   @IsString()
-  username!: string;
+  username!: string
 
   @IsEmail()
   @IsOptional()
-  email?: string;
+  email?: string
 
   @IsString()
   @MinLength(6)
-  password!: string;
+  password!: string
 
   @IsEnum(UserRole)
-  role!: UserRole;
+  role!: UserRole
 
   @IsString()
   @IsOptional()
-  name?: string;
+  name?: string
 
   @IsString()
   @IsOptional()
-  departmentName?: string; // PASTIKAN ADA INI
+  departmentName?: string
 
   @IsString()
   @IsOptional()
-  position?: string;
+  position?: string
 
-  // BISA HAPUS departmentId KALAU TIDAK PAKAI
   @IsString()
   @IsOptional()
-  departmentId?: string;
+  departmentId?: string // kalau backend lo udah link ke tabel departments
 }

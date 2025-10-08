@@ -8,7 +8,6 @@ import { useAuth } from "@/composables/useAuth"
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? "http://localhost:3000"
 const router = useRouter()
-
 const { user, loadUser } = useAuth()
 
 // ---------- STATE ----------
@@ -17,7 +16,6 @@ const message = ref<string | null>(null)
 const scanning = ref(false)
 const cameraError = ref<string | null>(null)
 let clockInterval: number | null = null
-
 let qrReader: any = null
 const videoRef = ref<HTMLVideoElement | null>(null)
 
@@ -41,7 +39,7 @@ const postAttendance = async (payload: {
   role: string
   qrValue: string
 }) => {
-  message.value = null
+  message.value = "⏳ Mengirim data absen..."
   try {
     const token = getToken()
     const res = await fetch(`${apiBase}/attendance/checkin`, {
@@ -53,51 +51,54 @@ const postAttendance = async (payload: {
       body: JSON.stringify(payload),
     })
 
-    const text = await res.text().catch(() => "")
+    const text = await res.text()
+    let data: any = {}
+    try {
+      data = JSON.parse(text)
+    } catch {}
 
     if (!res.ok) {
-      message.value = `❌ Gagal: ${res.status} ${text || res.statusText}`
+      console.error("❌ Error response:", data)
+      message.value = `❌ Gagal simpan absen: ${data?.message || text || res.statusText}`
       return false
     }
 
-    try {
-      const json = text ? JSON.parse(text) : {}
-      message.value = json?.message ?? "✅ Absen berhasil!"
-    } catch {
-      message.value = text || "✅ Absen berhasil!"
-    }
-
-    // ✅ Notifikasi sukses
+    message.value = "✅ Absen berhasil!"
     alert("✅ Absen berhasil!")
 
-    // ✅ Redirect ke dashboard setelah 1 detik
+    // 🔁 Redirect sesuai role user
     setTimeout(() => {
-      router.push("/kaprog-it/kaprogit")
+      if (user.value?.role === "KAPROG") {
+        router.push("/kaprog-it/kaprogit")
+      } else if (user.value?.role === "ADMIN") {
+        router.push("/admin/dashboard")
+      } else {
+        router.push("/dashboard")
+      }
     }, 1000)
 
     return true
   } catch (err: any) {
-    console.error("postAttendance error", err)
-    message.value = `⚠️ Error koneksi: ${err?.message || err}`
+    console.error("⚠️ postAttendance error:", err)
+    message.value = `⚠️ Gagal kirim ke server: ${err.message}`
     return false
   }
 }
 
-// ---------- QR DECODE ----------
+// ---------- QR SCANNER ----------
 let debounceLock = false
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return
   debounceLock = true
 
+  console.log("🔍 QR Terdeteksi:", raw)
   await loadUser()
 
   if (!user.value?.id || !user.value?.role) {
-    message.value = "⚠️ User belum terload atau role tidak tersedia"
+    message.value = "⚠️ Data user belum siap. Coba lagi."
     debounceLock = false
     return
   }
-
-  console.log("🔍 Barcode yang di-scan:", raw)
 
   try {
     const token = getToken()
@@ -109,13 +110,13 @@ const handleDecodedRaw = async (raw: string) => {
     })
 
     if (!res.ok) {
-      message.value = "❌ Barcode tidak valid atau tidak ditemukan"
+      message.value = "❌ QR Code tidak valid atau tidak ditemukan."
       debounceLock = false
       return
     }
 
     const barcode = await res.json()
-    console.log("🏢 Barcode result:", barcode)
+    console.log("🏢 Data barcode:", barcode)
 
     const payload = {
       userId: String(user.value.id),
@@ -123,16 +124,14 @@ const handleDecodedRaw = async (raw: string) => {
       qrValue: String(raw),
     }
 
-    console.log("📦 Payload final (checkin):", payload)
+    console.log("📦 Payload dikirim:", payload)
     await postAttendance(payload)
   } catch (error: any) {
-    console.error("❌ Gagal ambil data barcode:", error)
+    console.error("❌ Error ambil data barcode:", error)
     message.value = "⚠️ Gagal ambil data barcode"
   }
 
-  setTimeout(() => {
-    debounceLock = false
-  }, 2000)
+  setTimeout(() => (debounceLock = false), 2000)
 }
 
 // ---------- ZXING SCANNER ----------
@@ -150,17 +149,13 @@ const startScanner = async () => {
     qrReader = new ZXing.BrowserMultiFormatReader()
     scanning.value = true
 
-    const constraints = { video: { facingMode: { ideal: "environment" } } }
-
     await qrReader.decodeFromConstraints(
-      constraints,
+      { video: { facingMode: { ideal: "environment" } } },
       videoRef.value,
       (result: any, err: any) => {
-        if (result) {
-          handleDecodedRaw(result.getText())
-        } else if (err && err.name !== "NotFoundException") {
+        if (result) handleDecodedRaw(result.getText())
+        else if (err && err.name !== "NotFoundException")
           console.debug("Scanner error:", err)
-        }
       }
     )
   } catch (e: any) {
@@ -172,10 +167,8 @@ const startScanner = async () => {
 
 const stopScanner = () => {
   try {
-    if (qrReader) {
-      qrReader.reset?.()
-      qrReader = null
-    }
+    qrReader?.reset?.()
+    qrReader = null
   } finally {
     scanning.value = false
   }
@@ -198,8 +191,8 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
-     <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
+    <aside class="w-60 bg-white p-6 flex flex-col">
+      <div class="flex items-center justify-center h-20 mb-6">
         <h1 class="text-lg font-bold text-blue-600">KAPROG IT</h1>
       </div>
       <nav class="flex flex-col space-y-2">

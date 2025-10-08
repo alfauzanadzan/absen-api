@@ -1,62 +1,124 @@
 <template>
-  <div class="flex h-screen bg-white-100">
+  <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">ADMIN</h1>
+    <aside class="w-64 bg-white shadow-lg p-6 flex flex-col justify-between">
+      <div>
+        <!-- Header -->
+        <div class="flex items-center justify-center mb-10">
+          <h1 class="text-xl font-bold text-blue-600 tracking-wide">ADMIN PANEL</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex flex-col space-y-2">
+          <NuxtLink
+            to="/admin/admin"
+            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
+          >
+            Dashboard
+          </NuxtLink>
+          <NuxtLink
+            to="/admin/profiladmin"
+            class="p-2 rounded-md bg-blue-100 text-blue-600 font-semibold"
+          >
+            Profile
+          </NuxtLink>
+          <NuxtLink
+            to="/admin/addaccount"
+            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
+          >
+            Add Account
+          </NuxtLink>
+          <NuxtLink
+            to="/admin/attendance"
+            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
+          >
+            Attendance
+          </NuxtLink>
+          <NuxtLink
+            to="/admin/reports"
+            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
+          >
+            Reports
+          </NuxtLink>
+        </nav>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Profile</a>
-        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
-      </nav>
+
+      <!-- Footer -->
+      <div class="text-center text-xs text-gray-400 mt-6">
+        © 2025 Diskominfo Sumut
+      </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex items-center justify-center">
-      <div class="bg-white shadow-md rounded-lg p-6 w-80 text-center">
-        <!-- Garis atas kecil -->
-        <div class="w-10 h-0.5 bg-black mx-auto mb-2"></div>
+    <main class="flex-1 flex items-center justify-center p-8">
+      <div
+        class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center border border-gray-100"
+      >
+        <!-- Garis atas -->
+        <div class="w-12 h-1 bg-blue-500 mx-auto mb-3 rounded"></div>
 
         <!-- Judul -->
-        <h2 class="text-sm font-semibold mb-4">Profil Saya</h2>
+        <h2 class="text-lg font-bold text-gray-700 mb-6">Profil Saya</h2>
 
         <!-- Foto Profil -->
-        <div class="flex items-center justify-center mb-4">
+        <div class="relative flex items-center justify-center mb-5">
+          <div
+            v-if="!user?.avatar"
+            class="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-600 border border-blue-300"
+          >
+            {{ user?.username?.charAt(0)?.toUpperCase() ?? 'A' }}
+          </div>
           <img
-            :src="user?.avatar || '/images/default-avatar.png'"
+            v-else
+            :src="user.avatar"
             alt="Profile"
-            class="h-20 w-20 rounded-full border object-cover"
+            class="h-24 w-24 rounded-full border object-cover"
           />
         </div>
 
-        <!-- Email -->
-        <p class="text-gray-600 text-sm">{{ user?.email ?? 'Belum ada email' }}</p>
+        <!-- Info User -->
+        <div class="space-y-1">
+          <h3 class="font-bold text-xl text-gray-800">
+            {{ user?.username ?? 'Admin' }}
+          </h3>
+          <p class="text-gray-500 text-sm">
+            {{ user?.email ?? 'admin@diskominfo.sumutprov.go.id' }}
+          </p>
+          <p class="text-gray-600 font-semibold text-sm mt-2">
+            {{ user?.position ?? 'ADMINISTRATOR' }}
+          </p>
+          <p class="text-xs text-gray-500 mt-1 leading-snug">
+            {{ user?.instansi ?? 'Dinas Komunikasi dan Informatika Provinsi Sumatera Utara' }}
+          </p>
+        </div>
 
-        <!-- Nama -->
-        <h3 class="font-bold text-lg mt-1">{{ user?.username ?? 'Admin' }}</h3>
+        <!-- Garis bawah -->
+        <div class="w-full h-px bg-gray-200 mt-6 mb-3"></div>
 
-        <!-- Jabatan -->
-        <p class="text-xs text-gray-700 font-semibold mt-2">
-          {{ user?.position ?? 'ADMINISTRATOR' }}
-        </p>
-
-        <!-- Instansi -->
-        <p class="text-xs text-gray-500 mt-1">
-          {{ user?.instansi ?? 'Dinas Komunikasi dan Informatika Provinsi Sumatera Utara' }}
-        </p>
-
-        <!-- Garis bawah kecil -->
-        <div class="w-full h-px bg-gray-300 mt-4"></div>
+        <!-- Tombol -->
+        <button
+          @click="goDashboard"
+          class="mt-3 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+        >
+          Kembali ke Dashboard
+        </button>
       </div>
     </main>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
+import { navigateTo } from '#app'
+
+const { user, loadUser } = useAuth()
+
+onMounted(() => {
+  loadUser()
+})
+
 const goDashboard = () => {
-  navigateTo('/dashboard/kaprog')
+  navigateTo('/admin/admin')
 }
 </script>
