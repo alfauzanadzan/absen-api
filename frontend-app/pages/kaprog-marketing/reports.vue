@@ -2,20 +2,25 @@
   <div class="flex h-screen bg-white">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
+      <div class="flex items-center justify-center h-20 mb-6">
         <h1 class="text-lg font-bold text-blue-600">KAPROG MARKETING</h1>
       </div>
       <nav class="flex flex-col space-y-2">
         <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-100">🏠 Dashboard</a>
         <a href="/kaprog-marketing/profilkaprog" class="p-2 rounded hover:bg-gray-100">Profile</a>
         <a href="/kaprog-marketing/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
-        <a href="/kaprog-marketing/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
+        <a
+          href="/kaprog-marketing/reports"
+          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
+        >
+          Reports
+        </a>
       </nav>
     </aside>
 
     <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto">
-      <h1 class="text-3xl font-bold mb-8">Reports - Kehadiran Pekerja</h1>
+      <h1 class="text-3xl font-bold mb-8">Reports - Kehadiran Pekerja Marketing</h1>
 
       <!-- Filter -->
       <div class="flex items-center gap-4 mb-6">
@@ -59,7 +64,8 @@
                   :class="{
                     'bg-green-100 text-green-700': row.status === 'PRESENT',
                     'bg-yellow-100 text-yellow-700': row.status === 'LATE',
-                    'bg-gray-100 text-gray-700': row.status === 'COMPLETED'
+                    'bg-gray-100 text-gray-700': row.status === 'COMPLETED',
+                    'bg-red-100 text-red-700': row.status === 'ABSENT'
                   }"
                 >
                   {{ row.status }}
@@ -71,7 +77,7 @@
 
             <tr v-if="reportRows.length === 0">
               <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                Tidak ada data kehadiran pekerja hari ini.
+                Tidak ada data kehadiran pekerja Marketing.
               </td>
             </tr>
           </tbody>
@@ -92,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, watch } from "vue"
 import { useRuntimeConfig } from "#imports"
 import { useAuth } from "@/composables/useAuth"
 
@@ -115,24 +121,29 @@ const reportRows = ref<any[]>([])
 const fetchReport = async () => {
   await loadUser()
   try {
-    const res = await fetch(`${apiBase}/attendance`)
+    const res = await fetch(`${apiBase}/attendance/reports?type=${reportType.value}`)
+    if (!res.ok) throw new Error("Gagal mengambil data laporan.")
     const data = await res.json()
 
-    // hanya tampilkan pekerja
+    // 🔥 Filter hanya pekerja MARKETING
     reportRows.value = data
-      .filter((a: any) => a.user?.role === "PEKERJA")
+      .filter(
+        (a: any) =>
+          a.user?.role === "PEKERJA" &&
+          a.user?.departmentName?.toLowerCase() === "marketing"
+      )
       .map((a: any) => ({
-        name: a.user?.username || "Unknown",
-        status: a.status || "PRESENT",
-        checkin: a.checkinTime
-          ? new Date(a.checkinTime).toLocaleTimeString([], {
+        name: a.user?.name || a.user?.username || "Unknown",
+        status: a.status?.toUpperCase() || "PRESENT",
+        checkin: a.timeIn
+          ? new Date(a.timeIn).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
             })
           : "-",
-        checkout: a.checkoutTime
-          ? new Date(a.checkoutTime).toLocaleTimeString([], {
+        checkout: a.timeOut
+          ? new Date(a.timeOut).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
@@ -141,8 +152,12 @@ const fetchReport = async () => {
       }))
   } catch (err) {
     console.error("fetchReport error:", err)
+    reportRows.value = []
   }
 }
+
+// --- WATCH FILTER TYPE ---
+watch(reportType, fetchReport)
 
 // --- EXPORT CSV ---
 function downloadCSV() {
@@ -151,7 +166,7 @@ function downloadCSV() {
     return
   }
 
-  const headers = ["Name", "Status", "Check-in", "Checkout"]
+  const headers = ["Nama", "Status", "Check-in", "Checkout"]
   const rows = reportRows.value.map((r) => [
     r.name,
     r.status,
@@ -166,7 +181,7 @@ function downloadCSV() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `report_pekerja_${pad(today.getDate())}${pad(
+  a.download = `laporan_pekerja_MARKETING_${reportType.value}_${pad(today.getDate())}${pad(
     today.getMonth() + 1
   )}${today.getFullYear()}.csv`
   a.click()

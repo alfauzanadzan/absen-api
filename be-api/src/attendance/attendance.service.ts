@@ -22,32 +22,39 @@ export class AttendanceService {
     const barcode = await this.prisma.barcode.findUnique({ where: { value: qrValue } });
     if (!barcode) throw new BadRequestException('QR code tidak valid');
 
-    // Cek department cocok
+    // Pastikan department cocok
     if (user.departmentId !== barcode.departmentId) {
-      throw new BadRequestException('QR code tidak sesuai department Anda');
+      throw new BadRequestException('❌ QR code tidak sesuai dengan department kamu');
     }
 
-    // Cek sudah check-in hari ini
-    const startOfDay = new Date();
+    // Buat tanggal hari ini (tanpa jam)
+    const now = new Date();
+    const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date();
+    const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Cek apakah sudah ada attendance hari ini
     const todayAttendance = await this.prisma.attendance.findFirst({
-      where: { userId, date: { gte: startOfDay, lte: endOfDay } },
+      where: {
+        userId,
+        date: { gte: startOfDay, lte: endOfDay },
+      },
     });
-    if (todayAttendance) throw new BadRequestException('Sudah melakukan check-in hari ini');
 
-    // Status: LATE kalau lewat jam 8
-    const now = new Date();
+    if (todayAttendance) {
+      throw new BadRequestException('❌ Kamu sudah melakukan check-in hari ini');
+    }
+
+    // Status: LATE kalau lewat jam 8 pagi
     const status = now.getHours() >= 8 ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
 
-    // Create attendance
+    // Simpan attendance
     return this.prisma.attendance.create({
       data: {
         userId,
-        departmentId: user.departmentId || null,
-        departmentName: user.departmentName || null,
+        departmentId: user.departmentId,
+        departmentName: user.departmentName,
         qrValue,
         date: now,
         timeIn: now,
@@ -71,26 +78,40 @@ export class AttendanceService {
     if (!barcode) throw new BadRequestException('QR code tidak valid');
 
     if (user.departmentId !== barcode.departmentId) {
-      throw new BadRequestException('QR code tidak sesuai department Anda');
+      throw new BadRequestException('❌ QR code tidak sesuai dengan department kamu');
     }
 
     const now = new Date();
+
+    // 🔎 Cari attendance hari ini yang belum checkout
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
     const existingAttendance = await this.prisma.attendance.findFirst({
-      where: { userId, date: { gte: startOfDay, lte: endOfDay }, timeOut: null },
+      where: {
+        userId,
+        date: { gte: startOfDay, lte: endOfDay },
+        timeOut: null,
+      },
+      orderBy: { createdAt: 'desc' },
     });
-    if (!existingAttendance) throw new NotFoundException('Belum melakukan check-in atau sudah checkout');
 
+    if (!existingAttendance) {
+      throw new NotFoundException('❌ Belum melakukan check-in hari ini atau sudah checkout');
+    }
+
+    // Update attendance
     const updated = await this.prisma.attendance.update({
       where: { id: existingAttendance.id },
-      data: { timeOut: now, status: AttendanceStatus.COMPLETED },
+      data: {
+        timeOut: now,
+        status: AttendanceStatus.COMPLETED,
+      },
     });
 
-    return { message: 'Checkout berhasil', data: updated };
+    return { message: '✅ Checkout berhasil!', data: updated };
   }
 
   // ✅ GET ALL ATTENDANCE

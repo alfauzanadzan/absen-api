@@ -9,13 +9,18 @@
         <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
         <a href="/kaprog-it/profilkaprog" class="p-2 rounded hover:bg-gray-100">Profile</a>
         <a href="/kaprog-it/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
-        <a href="/kaprog-it/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
+        <a
+          href="/kaprog-it/reports"
+          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
+        >
+          Reports
+        </a>
       </nav>
     </aside>
 
     <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto">
-      <h1 class="text-3xl font-bold mb-8">Reports - Kehadiran Pekerja</h1>
+      <h1 class="text-3xl font-bold mb-8">Reports - Kehadiran Pekerja IT</h1>
 
       <!-- Filter -->
       <div class="flex items-center gap-4 mb-6">
@@ -75,7 +80,7 @@
 
             <tr v-if="reportRows.length === 0">
               <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                Tidak ada data kehadiran pekerja.
+                Tidak ada data kehadiran pekerja IT.
               </td>
             </tr>
           </tbody>
@@ -118,32 +123,42 @@ const reportRows = ref<any[]>([])
 // --- FETCH ATTENDANCE DATA ---
 const fetchReport = async () => {
   await loadUser()
+  console.log("👤 USER:", user.value)
+
+  const deptName = user.value?.departmentName?.toLowerCase() ?? "it"
+
   try {
     const res = await fetch(`${apiBase}/attendance/reports?type=${reportType.value}`)
     if (!res.ok) throw new Error("Gagal mengambil data laporan.")
     const data = await res.json()
+    console.log("🧠 DATA DARI API:", data)
 
-    // hanya tampilkan pekerja
     reportRows.value = data
-      .filter((a: any) => a.user?.role === "PEKERJA")
+      .filter((a: any) => {
+        const role = a.user?.role
+        const userDept = a.user?.departmentName?.toLowerCase() || ""
+        return role === "PEKERJA" && userDept.includes(deptName)
+      })
       .map((a: any) => ({
-        name: a.user?.username || "Unknown",
+        name: a.user?.name || a.user?.username || "Unknown",
         status: a.status?.toUpperCase() || "PRESENT",
-        checkin: a.checkinTime
-          ? new Date(a.checkinTime).toLocaleTimeString([], {
+        checkin: a.timeIn
+          ? new Date(a.timeIn).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
             })
           : "-",
-        checkout: a.checkoutTime
-          ? new Date(a.checkoutTime).toLocaleTimeString([], {
+        checkout: a.timeOut
+          ? new Date(a.timeOut).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
             })
           : "-",
       }))
+
+    console.log("✅ FILTERED ROWS:", reportRows.value)
   } catch (err) {
     console.error("fetchReport error:", err)
     reportRows.value = []
@@ -175,7 +190,7 @@ function downloadCSV() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `laporan_pekerja_${reportType.value}_${pad(today.getDate())}${pad(
+  a.download = `laporan_pekerja_IT_${reportType.value}_${pad(today.getDate())}${pad(
     today.getMonth() + 1
   )}${today.getFullYear()}.csv`
   a.click()

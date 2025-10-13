@@ -1,162 +1,155 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRuntimeConfig, useRouter } from '#imports'
-import { useAuth } from '@/composables/useAuth'
+definePageMeta({ middleware: ["role"] })
+
+import { ref, onMounted, onBeforeUnmount, watch } from "vue"
+import { useRuntimeConfig, useRoute } from "#imports"
+import { useAuth } from "@/composables/useAuth"
 
 const config = useRuntimeConfig()
-const apiBase = config.public?.apiBase ?? 'http://localhost:3000'
-const router = useRouter()
-const { user, loadUser } = useAuth()
+const apiBase = config.public?.apiBase ?? "http://localhost:3000"
 
-// ---------- STATE ----------
-const time = ref('')
+const { user, loadUser } = useAuth()
+const route = useRoute()
+
+// ⚙️ UI State
+const time = ref("")
 const message = ref<string | null>(null)
 const scanning = ref(false)
 const cameraError = ref<string | null>(null)
-let clockInterval: number | null = null
-let qrReader: any = null
 const videoRef = ref<HTMLVideoElement | null>(null)
+let qrReader: any = null
+let clockInterval: number | null = null
 
-// ---------- CLOCK ----------
+// 🧭 Mode otomatis (check-in / check-out)
+const mode = ref<"checkin" | "checkout">("checkin")
+const updateMode = () => {
+  mode.value = route.path.toLowerCase().includes("checkout") ? "checkout" : "checkin"
+  console.log("🧭 Mode aktif:", mode.value)
+}
+updateMode()
+watch(route, updateMode)
+
+// 🕒 Jam real-time
 const updateClock = () => {
   const now = new Date()
-  time.value = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  time.value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
 }
 
-// ---------- JWT ----------
-const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
+// 🔑 Token
+const getToken = () =>
+  typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-// ---------- POST CHECKOUT ----------
-const postCheckout = async (payload: { userId: string; role: string; qrValue: string }) => {
-  message.value = '⏳ Mengirim data checkout...'
+// 📤 Kirim data ke backend
+const postAttendance = async (payload: Record<string, any>) => {
+  message.value = null
   try {
     const token = getToken()
-    const res = await fetch(`${apiBase}/attendance/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    const res = await fetch(`${apiBase}/attendance/${mode.value}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     })
-    const data = await res.json().catch(() => ({}))
 
+    const text = await res.text().catch(() => "")
     if (!res.ok) {
-      message.value = `❌ Gagal checkout: ${data?.message || res.statusText}`
+      message.value = `❌ Gagal ${mode.value}: ${text || res.statusText}`
+      console.error(`❌ Gagal ${mode.value}:`, text)
       return false
     }
 
-    message.value = '✅ Checkout berhasil!'
-    alert('✅ Checkout berhasil!')
-
-    setTimeout(() => {
-      if (user.value?.role === 'KAPROG') router.push('/kaprog-it/kaprogit')
-      else if (user.value?.role === 'ADMIN') router.push('/admin/dashboard')
-      else router.push('/dashboard')
-    }, 1000)
-
+    const json = text ? JSON.parse(text) : {}
+    message.value =
+      json?.message ?? `✅ ${mode.value === "checkin" ? "Check-in" : "Check-out"} berhasil`
     return true
   } catch (err: any) {
-    console.error(err)
-    message.value = `⚠️ Gagal kirim ke server: ${err.message}`
+    message.value = `⚠️ Error koneksi: ${err?.message || err}`
+    console.error("postAttendance error", err)
     return false
   }
 }
 
-// ---------- HANDLE QR SCAN ----------
+// 🔍 Proses hasil QR
 let debounceLock = false
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return
   debounceLock = true
 
   await loadUser()
+
   if (!user.value?.id || !user.value?.role) {
-    message.value = '⚠️ Data user belum siap. Tunggu beberapa detik...'
+    message.value = "⚠️ Data user belum siap. Tunggu beberapa detik..."
     debounceLock = false
     return
   }
 
-  // ⏰ CEK JAM DULU (harus >= 17:00)
-  const now = new Date()
-  const jamSekarang = now.getHours()
-  if (jamSekarang < 17) {
-    message.value = '❌ Belum jam 5 bro'
-    debounceLock = false
-    return
-  }
+  console.log(`🔍 Barcode hasil scan (${mode.value}):`, raw)
 
-  try {
-    const token = getToken()
-    const res = await fetch(`${apiBase}/departments/barcode/${encodeURIComponent(raw)}`, {
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    })
-
-    if (!res.ok) {
-      message.value = '❌ QR Code tidak terdaftar'
+  // 🚫 Batas jam check-out = 17:00 (jam 5 sore)
+  if (mode.value === "checkout") {
+    const now = new Date()
+    if (now.getHours() < 17) {
+      message.value = "⚠️ Check-out hanya dapat dilakukan setelah pukul 17:00"
       debounceLock = false
       return
     }
-
-    const barcodeData = await res.json()
-
-    // 🔍 VALIDASI DEPARTMENT SESUAI
-    const userDeptId = user.value?.department?.id || user.value?.departmentId
-    const barcodeDeptId = barcodeData.departmentId
-
-    if (!userDeptId || userDeptId !== barcodeDeptId) {
-      message.value = '❌ QR Code tidak sesuai dengan department kamu'
-      debounceLock = false
-      return
-    }
-
-    // ✅ Lolos semua, kirim ke server
-    const payload = { userId: String(user.value.id), role: String(user.value.role), qrValue: raw }
-    await postCheckout(payload)
-  } catch (error: any) {
-    console.error(error)
-    message.value = '⚠️ Gagal ambil data barcode'
   }
+
+  const payload =
+    mode.value === "checkin"
+      ? { userId: String(user.value.id), role: String(user.value.role), qrValue: String(raw) }
+      : { userId: String(user.value.id), qrValue: String(raw) }
+
+  await postAttendance(payload)
 
   setTimeout(() => (debounceLock = false), 2000)
 }
 
-// ---------- ZXING SCANNER ----------
+// 📸 Scanner
 const startScanner = async () => {
   cameraError.value = null
   scanning.value = false
   if (!videoRef.value) {
-    cameraError.value = 'Video element belum siap'
+    cameraError.value = "Video element belum siap"
     return
   }
 
   try {
-    const ZXing = await import('@zxing/browser')
+    const ZXing = await import("@zxing/browser")
     qrReader = new ZXing.BrowserMultiFormatReader()
     scanning.value = true
-    await qrReader.decodeFromConstraints(
-      { video: { facingMode: { ideal: 'environment' } } },
-      videoRef.value,
-      (result: any, err: any) => {
-        if (result) handleDecodedRaw(result.getText())
-      }
-    )
+
+    const constraints = { video: { facingMode: { ideal: "environment" } } }
+    await qrReader.decodeFromConstraints(constraints, videoRef.value, (result: any, err: any) => {
+      if (result) handleDecodedRaw(result.getText())
+      else if (err && err.name !== "NotFoundException") console.debug("Scanner error:", err)
+    })
   } catch (e: any) {
-    cameraError.value = e?.message || 'Gagal inisialisasi kamera'
+    cameraError.value = e?.message || "Gagal inisialisasi kamera"
+    scanning.value = false
+    console.error("ZXing init error:", e)
+  }
+}
+
+// 🛑 Stop scanner
+const stopScanner = () => {
+  try {
+    qrReader?.reset?.()
+    qrReader = null
+  } finally {
     scanning.value = false
   }
 }
 
-const stopScanner = () => {
-  qrReader?.reset?.()
-  qrReader = null
-  scanning.value = false
-}
-
-// ---------- LIFECYCLE ----------
+// 🚀 Lifecycle
 onMounted(async () => {
-  await loadUser()
+  if (typeof window !== "undefined") await loadUser()
   updateClock()
   clockInterval = window.setInterval(updateClock, 1000)
-  await startScanner()
+  if (typeof window !== "undefined") await startScanner()
 })
-
 onBeforeUnmount(() => {
   if (clockInterval) clearInterval(clockInterval)
   stopScanner()
@@ -166,45 +159,78 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
+    <aside class="w-60 bg-white p-6 flex flex-col shadow">
       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">KAPROG MARKETING</h1>
+        <h1 class="text-lg font-bold text-blue-600">
+          {{ user?.name || "Nama User" }}
+        </h1>
       </div>
+
       <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-400">🏠 Dashboard</a>
-        <a href="/kaprogmarketing/checkin" class="p-2 rounded hover:bg-gray-400">🕓 Check-in</a>
-        <a href="/kaprogmarketing/checkout" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">⏰ Check-out</a>
+        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-200">🏠 Dashboard</a>
+        <a href="/kaprog-marketing/checkin" class="p-2 rounded hover:bg-gray-200">🕓 Check-in</a>
+        <a
+          href="/kaprog-marketing/checkout"
+          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
+        >
+          ⏰ Check-out
+        </a>
       </nav>
     </aside>
 
     <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
       <div class="w-full max-w-2xl">
+        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h1 class="text-2xl font-bold">Scan QR untuk Check-out</h1>
-            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code department Anda</p>
-            <p class="text-xs text-gray-400 mt-1">Department: {{ user?.department?.name || 'Belum ada' }}</p>
+            <h1 class="text-2xl font-bold">
+              {{ mode === "checkin" ? "Check-in Department" : "Check-out Department" }}
+            </h1>
+            <p class="text-sm text-gray-500">
+              {{
+                mode === "checkin"
+                  ? "Arahkan kamera ke QR Code untuk Check-in"
+                  : "Arahkan kamera ke QR Code untuk Check-out"
+              }}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              Department Anda: {{ user?.department?.name || "Belum ada" }}
+            </p>
           </div>
           <div class="text-right">
             <div class="text-3xl font-bold">{{ time }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ user?.username ?? 'User' }}</div>
+            <div class="text-xs text-gray-500 mt-1">
+              {{ user?.username ?? "User" }}
+            </div>
           </div>
         </div>
 
         <!-- Scanner -->
         <div class="flex flex-col items-center gap-4">
-          <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow">
-            <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover"></video>
-            <div class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm">
-              <div>
-                <span v-if="scanning">🔍 Scanning...</span>
-                <span v-else>⏸ Paused</span>
-              </div>
-              <div>
-                <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">Stop</button>
-                <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
-              </div>
+          <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow-lg">
+            <client-only>
+              <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover" />
+            </client-only>
+
+            <div
+              class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
+            >
+              <span>{{ scanning ? "🔍 Scanning..." : "⏸ Paused" }}</span>
+              <button
+                v-if="scanning"
+                @click="stopScanner"
+                class="px-3 py-1 bg-red-500 rounded text-xs"
+              >
+                Stop
+              </button>
+              <button
+                v-else
+                @click="startScanner"
+                class="px-3 py-1 bg-green-500 rounded text-xs"
+              >
+                Start
+              </button>
             </div>
           </div>
 
@@ -213,12 +239,22 @@ onBeforeUnmount(() => {
             <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
             <p
               v-else-if="message"
-              class="text-sm"
-              :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'"
+              class="text-sm font-medium"
+              :class="{
+                'text-green-600': message.includes('✅'),
+                'text-red-600': message.includes('❌'),
+                'text-yellow-600': message.includes('⚠️'),
+              }"
             >
               {{ message }}
             </p>
-            <p v-else class="text-sm text-gray-500">📱 Siap melakukan Check-out</p>
+            <p v-else class="text-sm text-gray-500">
+              {{
+                mode === "checkin"
+                  ? "📱 Siap melakukan Check-in"
+                  : "📱 Siap melakukan Check-out"
+              }}
+            </p>
           </div>
         </div>
       </div>
