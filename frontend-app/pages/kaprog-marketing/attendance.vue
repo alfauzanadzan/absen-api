@@ -1,17 +1,22 @@
 <template>
-  <div class="flex h-screen bg-white">
-    <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">KAPROG MARKETING</h1>
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1
+          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
+        >
+          KAPROG MARKETING
+        </h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-100">🏠 Dashboard</a>
-        <a href="/kaprog-marketing/profilkaprog" class="p-2 rounded hover:bg-gray-100">Profile</a>
-        <a href="/kaprog-marketing/attendance" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Attendance</a>
-        <a href="/kaprog-marketing/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/kaprog-marketing/kaprogmarketing" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/kaprog-marketing/profilkaprog" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/kaprog-marketing/attendance" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">📝 Attendance</a>
+        <a href="/kaprog-marketing/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
       </nav>
-    </aside>
+    </aside>
 
     <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto">
@@ -31,27 +36,44 @@
       </div>
 
       <!-- Table -->
-      <div class="bg-white border rounded shadow-sm">
-        <table class="min-w-full">
-          <thead>
-            <tr class="border-b bg-gray-50">
+      <div
+        class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+      >
+        <table class="min-w-full text-gray-800">
+          <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
+            <tr>
               <th class="text-left px-6 py-3 font-semibold">Nama</th>
               <th class="text-left px-6 py-3 font-semibold">Position</th>
-              <th class="text-left px-6 py-3 font-semibold">Time</th>
+              <th class="text-left px-6 py-3 font-semibold">Department</th>
+              <th class="text-left px-6 py-3 font-semibold">Tanggal</th>
+              <th class="text-left px-6 py-3 font-semibold">Jam Masuk</th>
               <th class="text-left px-6 py-3 font-semibold">Status</th>
               <th class="text-left px-6 py-3 font-semibold text-center">Action</th>
             </tr>
           </thead>
+
           <tbody>
             <tr
               v-for="rec in attendances"
               :key="rec.id"
-              class="border-b hover:bg-gray-50"
+              class="border-t border-white/40 hover:bg-white/30 transition duration-200"
             >
-              <td class="px-6 py-4">{{ rec.name }}</td>
-              <td class="px-6 py-4">{{ rec.position }}</td>
-              <td class="px-6 py-4">{{ rec.time }}</td>
-              <td class="px-6 py-4">{{ rec.status }}</td>
+              <td class="px-6 py-4">{{ rec.user?.name || '-' }}</td>
+              <td class="px-6 py-4">{{ rec.user?.role || '-' }}</td>
+              <td class="px-6 py-4">{{ rec.departmentName || '-' }}</td>
+              <td class="px-6 py-4">{{ formatDate(rec.date) }}</td>
+              <td class="px-6 py-4">{{ formatTime(rec.timeIn) }}</td>
+              <td class="px-6 py-4">
+                <span
+                  :class="{
+                    'text-green-600 font-semibold': rec.status === 'PRESENT',
+                    'text-yellow-600 font-semibold': rec.status === 'LATE',
+                    'text-gray-500 font-semibold': rec.status === 'COMPLETED'
+                  }"
+                >
+                  {{ rec.status || '-' }}
+                </span>
+              </td>
               <td class="px-6 py-4 text-center">
                 <button
                   class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
@@ -64,8 +86,8 @@
 
             <!-- Kalau belum ada data -->
             <tr v-if="attendances.length === 0">
-              <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data kehadiran pekerja Marketing.
+              <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                Belum ada data kehadiran pekerja MARKETING.
               </td>
             </tr>
           </tbody>
@@ -85,16 +107,17 @@
             <label class="block text-sm font-medium mb-1">Nama</label>
             <input
               readonly
-              :value="editingRecord?.name"
+              :value="editingRecord?.user?.name"
               class="w-full border px-3 py-2 rounded bg-gray-50"
             />
           </div>
           <div class="mb-3">
-            <label class="block text-sm font-medium mb-1">Time</label>
+            <label class="block text-sm font-medium mb-1">Jam Masuk</label>
             <input
-              v-model="editingRecord.time"
+              v-model="editingRecord.timeIn"
               required
               class="w-full border px-3 py-2 rounded"
+              type="time"
             />
           </div>
           <div class="mb-3">
@@ -130,116 +153,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
-import { useRuntimeConfig } from "#imports"
-import { useAuth } from "@/composables/useAuth"
+import { ref, onMounted } from "vue";
+import { useRuntimeConfig } from "#imports";
+import { useAuth } from "@/composables/useAuth";
 
-const config = useRuntimeConfig()
-const apiBase = config.public?.apiBase ?? "http://localhost:3000"
-const { user, loadUser } = useAuth()
+const config = useRuntimeConfig();
+const apiBase = config.public?.apiBase ?? "http://localhost:3000";
+const { user, loadUser } = useAuth();
 
-// Tanggal hari ini
-const today = new Date()
-const pad = (n: number) => (n < 10 ? "0" + n : String(n))
-const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
+const attendances = ref<any[]>([]);
+const showModal = ref(false);
+const editingRecord = ref<any>(null);
 
-// Attendance list
-type AttendanceRow = {
-  id: string
-  userId: string
-  name: string
-  position: string
-  time: string
-  status: string
-}
-const attendances = ref<AttendanceRow[]>([])
-
-const showModal = ref(false)
-const editingRecord = ref<AttendanceRow | null>(null)
+// format tanggal hari ini
+const today = new Date();
+const pad = (n: number) => (n < 10 ? "0" + n : n);
+const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`;
 
 const getToken = () =>
-  typeof window !== "undefined" ? localStorage.getItem("token") : null
+  typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-// Ambil data attendance khusus Marketing
+function formatDate(dateStr: string) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+}
+
+function formatTime(timeStr: string | null) {
+  if (!timeStr) return "-";
+  const d = new Date(timeStr);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// ambil data dari backend
 const fetchAttendances = async () => {
   try {
-    const token = getToken()
+    const token = getToken();
     const res = await fetch(`${apiBase}/attendance`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    })
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
 
-    if (!res.ok) return
-    const data = await res.json().catch(() => [])
-
-    const deptName = user.value?.departmentName ?? "MARKETING"
-
+    const deptName = user.value?.departmentName ?? "";
     attendances.value = (data || [])
       .filter((a: any) => a.departmentName === deptName && a.role === "PEKERJA")
-      .map((a: any) => {
-        const timeStr = a.timeIn
-          ? new Date(a.timeIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          : "-"
-        return {
-          id: a.id,
-          userId: a.userId,
-          name: a.user?.name ?? a.user?.username ?? "Unknown",
-          position: a.user?.role ?? "-",
-          time: timeStr,
-          status: a.status ?? "-",
-        }
-      })
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (err) {
-    console.error("fetchAttendances error", err)
+    console.error("fetchAttendances error:", err);
   }
-}
+};
 
 function markAllPresent() {
-  alert("✅ Fitur Mark semua hadir untuk departemen Marketing — coming soon...")
+  alert("✅ Mark semua hadir untuk departemen IT. (Coming soon...)");
 }
 
-function openEdit(rec: AttendanceRow) {
-  editingRecord.value = { ...rec }
-  showModal.value = true
-}
-
-async function saveEdit() {
-  if (!editingRecord.value) return
-
-  const token = getToken()
-  try {
-    await fetch(`${apiBase}/attendance/${editingRecord.value.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        time: editingRecord.value.time,
-        status: editingRecord.value.status,
-      }),
-    })
-  } catch (e) {
-    console.error("update attendance error", e)
-  }
-
-  const idx = attendances.value.findIndex((r) => r.id === editingRecord.value?.id)
-  if (idx !== -1) {
-    attendances.value[idx].time = editingRecord.value.time
-    attendances.value[idx].status = editingRecord.value.status
-  }
-  closeModal()
+function openEdit(rec: any) {
+  editingRecord.value = { ...rec };
+  showModal.value = true;
 }
 
 function closeModal() {
-  showModal.value = false
-  editingRecord.value = null
+  showModal.value = false;
+  editingRecord.value = null;
+}
+
+async function saveEdit() {
+  if (!editingRecord.value) return;
+  const idx = attendances.value.findIndex(r => r.id === editingRecord.value.id);
+  if (idx !== -1) attendances.value[idx] = { ...editingRecord.value };
+  closeModal();
 }
 
 onMounted(async () => {
-  await loadUser()
-  await fetchAttendances()
-})
+  await loadUser();
+  await fetchAttendances();
+});
 </script>

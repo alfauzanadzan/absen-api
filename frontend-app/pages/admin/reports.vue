@@ -1,64 +1,67 @@
 <template>
-  <div class="flex h-screen bg-white">
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">ADMIN</h1>
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+        <a href="/admin/attendance" class="p-3 rounded-lg hover:bg-white/20 transition">📝 Attendance</a>
+        <a href="/admin/reports" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">📊 Reports</a>
       </nav>
     </aside>
 
-    <!-- Main -->
+    <!-- Main Content -->
     <main class="flex-1 p-8 overflow-y-auto">
-      <h1 class="text-3xl font-bold mb-8">REPORTS</h1>
+      <h1 class="text-3xl font-bold mb-8 text-white drop-shadow-md">REPORTS</h1>
 
       <!-- Filter -->
       <div class="flex items-center gap-4 mb-6">
-        <select v-model="reportType" @change="generateReport" class="border px-3 py-2 rounded flex-1">
+        <select v-model="reportType" class="border px-3 py-2 rounded flex-1">
           <option value="daily">Daily Report</option>
           <option value="weekly">Weekly Report</option>
           <option value="monthly">Monthly Report</option>
         </select>
+
         <div class="flex-1 text-right">
           <input readonly :value="displayDate" class="w-1/2 border px-3 py-2 rounded text-right" />
         </div>
       </div>
 
       <!-- Table -->
-      <div class="bg-white border rounded-lg shadow">
-        <table class="min-w-full">
-          <thead class="bg-gray-50">
+      <div
+        class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+        <table class="min-w-full text-gray-800">
+          <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
             <tr>
-              <th class="text-left px-6 py-3 font-semibold">Department</th>
-              <th class="text-center px-6 py-3 font-semibold">Total Employees</th>
+              <th class="text-left px-6 py-3 font-semibold">Departemen</th>
+              <th class="text-center px-6 py-3 font-semibold">Total Kehadiran</th>
               <th class="text-right px-6 py-3 font-semibold">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr
-              v-for="(dept, idx) in reportRows"
+              v-for="(row, idx) in reportRows"
               :key="idx"
-              class="border-t hover:bg-gray-50"
-            >
-              <td class="px-6 py-4">{{ dept.department }}</td>
-              <td class="px-6 py-4 text-center">{{ dept.count }}</td>
+              class="border-t border-white/40 hover:bg-white/30 transition duration-200">
+              <td class="px-6 py-4">{{ row.department }}</td>
+              <td class="px-6 py-4 text-center">{{ row.count }}</td>
               <td class="px-6 py-4 text-right">
                 <button
                   class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                  @click="viewDetail(dept)"
-                >
+                  @click="viewRow(row)">
                   View
                 </button>
               </td>
             </tr>
+
             <tr v-if="reportRows.length === 0">
-              <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+              <td colspan="3" class="px-6 py-8 text-center text-gray-100 font-semibold">
                 Tidak ada data laporan.
               </td>
             </tr>
@@ -67,19 +70,16 @@
       </div>
     </main>
 
-    <!-- Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    >
+    <!-- Modal Detail -->
+    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div class="bg-white rounded-lg w-11/12 md:w-2/3 p-6 shadow-lg">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Detail Department: {{ selectedDept?.department }}</h3>
+          <h3 class="text-lg font-semibold">Detail Departemen: {{ modalRow?.department }}</h3>
           <button class="text-gray-600 hover:text-black" @click="closeModal">✕</button>
         </div>
 
         <p class="text-sm text-gray-600 mb-4">
-          Total: <strong>{{ selectedDept?.count }}</strong>
+          Total: <strong>{{ modalList.length }}</strong>
         </p>
 
         <div class="max-h-72 overflow-y-auto border rounded">
@@ -88,19 +88,20 @@
               <tr>
                 <th class="text-left px-4 py-2">No</th>
                 <th class="text-left px-4 py-2">Nama</th>
+                <th class="text-left px-4 py-2">Role</th>
                 <th class="text-left px-4 py-2">Status</th>
-                <th class="text-left px-4 py-2">Time In</th>
-                <th class="text-left px-4 py-2">Time Out</th>
+                <th class="text-left px-4 py-2">Jam Masuk</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(item, i) in modalList" :key="i" class="border-t hover:bg-gray-50">
                 <td class="px-4 py-2">{{ i + 1 }}</td>
-                <td class="px-4 py-2">{{ item.name }}</td>
+                <td class="px-4 py-2">{{ item.user.name }}</td>
+                <td class="px-4 py-2">{{ item.user.role }}</td>
                 <td class="px-4 py-2">{{ item.status }}</td>
-                <td class="px-4 py-2">{{ item.timeIn }}</td>
-                <td class="px-4 py-2">{{ item.timeOut }}</td>
+                <td class="px-4 py-2">{{ formatTime(item.timeIn) }}</td>
               </tr>
+
               <tr v-if="modalList.length === 0">
                 <td colspan="5" class="px-4 py-6 text-center text-gray-500">
                   Tidak ada detail laporan.
@@ -110,14 +111,8 @@
           </table>
         </div>
 
-        <div class="mt-4 flex justify-end gap-3">
+        <div class="mt-4 flex justify-end">
           <button class="px-4 py-2 rounded border" @click="closeModal">Close</button>
-          <button
-            class="px-4 py-2 rounded bg-blue-500 text-white"
-            @click="downloadModalCSV"
-          >
-            Download CSV
-          </button>
         </div>
       </div>
     </div>
@@ -125,117 +120,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRuntimeConfig } from '#imports'
-import { useAuth } from '@/composables/useAuth'
+import { ref, onMounted, watch } from "vue"
 
-const config = useRuntimeConfig()
-const apiBase = config.public?.apiBase ?? 'http://localhost:3000'
-const { user, loadUser } = useAuth()
+// ==== STATE ====
+const reportType = ref("daily")
+const reportRows = ref<{ department: string; count: number; items: any[] }[]>([])
+const showModal = ref(false)
+const modalRow = ref<any>(null)
+const modalList = ref<any[]>([])
 
+// ==== DATE ====
 const today = new Date()
-const pad = (n: number) => (n < 10 ? '0' + n : String(n))
+const pad = (n: number) => (n < 10 ? "0" + n : n)
 const displayDate = `Today ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
 
-const reportType = ref('daily')
-const attendances = ref<any[]>([])
-const reportRows = ref<any[]>([])
-const showModal = ref(false)
-const modalList = ref<any[]>([])
-const selectedDept = ref<any>(null)
+// ==== API BASE URL ====
+const API_BASE = "http://localhost:3000" // 🔧 Ganti sesuai backend NestJS kamu
 
-const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
+// ==== UTIL ====
+function formatTime(dateStr: string | null) {
+  if (!dateStr) return "-"
+  const d = new Date(dateStr)
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
-async function fetchAttendances() {
+// ==== FETCH DATA ====
+async function loadReports() {
   try {
-    const token = getToken()
-    const res = await fetch(`${apiBase}/attendance`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    })
-    if (!res.ok) throw new Error('Failed to fetch')
-    const data = await res.json()
-    attendances.value = data || []
+    const data = await $fetch(`${API_BASE}/attendance`) // 🔥 ambil dari backend NestJS
+
+    // grupkan berdasarkan departemen
+    const grouped = data.reduce((acc: any, curr: any) => {
+      const dept = curr.department?.name || "Unknown"
+      if (!acc[dept]) acc[dept] = []
+      acc[dept].push(curr)
+      return acc
+    }, {})
+
+    // ubah jadi array untuk tabel
+    reportRows.value = Object.entries(grouped).map(([dept, list]: any) => ({
+      department: dept,
+      count: list.length,
+      items: list,
+    }))
   } catch (err) {
-    console.error('fetchAttendances error', err)
+    console.error("❌ Gagal ambil laporan:", err)
+    reportRows.value = []
   }
 }
 
-// 🔹 Generate report dari data attendance
-function generateReport() {
-  const grouped: Record<string, any[]> = {}
-  const now = new Date()
-  attendances.value.forEach((a) => {
-    const department = a.departmentName ?? a.user?.department ?? '-'
-    const date = new Date(a.date)
-    let include = false
-
-    if (reportType.value === 'daily') {
-      include = date.toDateString() === now.toDateString()
-    } else if (reportType.value === 'weekly') {
-      const diff = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-      include = diff <= 7
-    } else if (reportType.value === 'monthly') {
-      include = date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-    }
-
-    if (include) {
-      if (!grouped[department]) grouped[department] = []
-      grouped[department].push(a)
-    }
-  })
-
-  reportRows.value = Object.entries(grouped).map(([department, list]) => ({
-    department,
-    count: list.length,
-    list,
-  }))
-}
-
-// 🔹 Lihat detail per department
-function viewDetail(dept: any) {
-  selectedDept.value = dept
-  modalList.value = dept.list.map((a: any) => ({
-    name: a.user?.name ?? a.user?.username ?? 'Unknown',
-    status: a.status ?? 'UNKNOWN',
-    timeIn: a.timeIn ? new Date(a.timeIn).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '-',
-    timeOut: a.timeOut ? new Date(a.timeOut).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '-',
-  }))
+// ==== MODAL ====
+function viewRow(row: any) {
+  modalRow.value = row
+  modalList.value = row.items
   showModal.value = true
 }
-
 function closeModal() {
   showModal.value = false
+  modalRow.value = null
   modalList.value = []
-  selectedDept.value = null
 }
 
-function downloadModalCSV() {
-  if (!modalList.value.length) {
-    alert('Tidak ada data untuk di-export.')
-    return
-  }
-
-  const headers = ['Name', 'Status', 'Time In', 'Time Out']
-  const rows = modalList.value.map((r) => [r.name, r.status, r.timeIn, r.timeOut])
-  const csvContent = [headers, ...rows]
-    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${selectedDept.value?.department}_${reportType.value}_${pad(today.getDate())}${pad(today.getMonth()+1)}${today.getFullYear()}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-onMounted(async () => {
-  await loadUser()
-  await fetchAttendances()
-  generateReport()
-})
+// ==== INIT ====
+onMounted(loadReports)
+watch(reportType, loadReports) // biar reload kalau ganti daily/weekly/monthly
 </script>

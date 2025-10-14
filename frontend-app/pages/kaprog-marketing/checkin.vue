@@ -127,16 +127,21 @@ onBeforeUnmount(() => { if (clockInterval) clearInterval(clockInterval); stopSca
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-green-600">KAPROG MARKETING</h1>
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1
+          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
+        >
+          KAPROG MARKETING
+        </h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-400">🏠 Dashboard</a>
-        <a href="/kaprog-marketing/checkin" class="p-2 rounded bg-green-50 text-green-600 font-medium">🕓 Check-in</a>
-        <a href="/kaprog-marketing/checkout" class="p-2 rounded hover:bg-gray-400">⏰ Check-out</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/kaprog-marketing/kaprogmarketing" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/kaprog-marketing/checkin" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">🕓 Check-in</a>
+        <a href="/kaprog-marketing/checkout" class="p-3 rounded-lg hover:bg-white/20 transition">⏰ Check-out</a>
       </nav>
     </aside>
 

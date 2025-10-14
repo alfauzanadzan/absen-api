@@ -6,7 +6,9 @@ definePageMeta({ middleware: ['role'] })
 
 const { user, loadUser, logout } = useAuth()
 
-// State
+// =============================
+// STATE
+// =============================
 const stats = ref<{ key: string; label: string; value: number; accent: string }[]>([])
 const divisions = ref<{ id: string; name: string; count: number }[]>([])
 
@@ -21,17 +23,20 @@ const filteredDivisions = computed(() =>
   )
 )
 
-// Fetch data dari backend
+// =============================
+// FETCH DATA
+// =============================
 const fetchStats = async () => {
   try {
+    const token = localStorage.getItem('token')
     const res = await fetch('http://localhost:3000/users', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
     const users = await res.json()
 
     console.log('Users data:', users) // DEBUG
 
-    // PERBAIKAN: Gunakan role yang sesuai dengan database
+    // Hitung berdasarkan role
     const workerCount = users.filter((u: any) => u.role === 'PEKERJA').length
     const kaprogCount = users.filter((u: any) => u.role === 'KAPROG').length
     const adminCount = users.filter((u: any) => u.role === 'ADMIN').length
@@ -41,7 +46,7 @@ const fetchStats = async () => {
       { key: 'workers', label: 'Pekerja', value: workerCount, accent: 'green' },
       { key: 'kaprog', label: 'Kaprog', value: kaprogCount, accent: 'blue' },
       { key: 'admin', label: 'Admin', value: adminCount, accent: 'purple' },
-      { key: 'superadmin', label: 'Super Admin', value: superadminCount, accent: 'red' }
+      { key: 'superadmin', label: 'Super Admin', value: superadminCount, accent: 'red' },
     ]
   } catch (err) {
     console.error('Gagal ambil stats:', err)
@@ -50,54 +55,61 @@ const fetchStats = async () => {
 
 const fetchDivisions = async () => {
   try {
-    // PERBAIKAN: Endpoint yang benar adalah /departments
+    const token = localStorage.getItem('token')
+
+    // Fetch daftar department
     const res = await fetch('http://localhost:3000/departments', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
     const departments = await res.json()
-    
-    console.log('Departments data:', departments) // DEBUG
+    console.log('Departments data:', departments)
 
-    // Hitung jumlah user per department
+    // Fetch semua user
     const userRes = await fetch('http://localhost:3000/users', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
     const users = await userRes.json()
 
+    // Hitung jumlah user per department
     divisions.value = departments.map((dept: any) => ({
       id: dept.id,
       name: dept.name,
-      count: users.filter((u: any) => u.departmentName === dept.name).length
+      count: users.filter((u: any) => u.departmentName === dept.name).length,
     }))
 
-    console.log('Divisions with counts:', divisions.value) // DEBUG
+    console.log('Divisions with counts:', divisions.value)
   } catch (err) {
     console.error('Gagal ambil divisions:', err)
-    // Fallback data untuk testing
+    // Data fallback untuk testing
     divisions.value = [
       { id: '1', name: 'IT', count: 0 },
-      { id: '2', name: 'Marketing', count: 0 }
+      { id: '2', name: 'Marketing', count: 0 },
     ]
   }
 }
 
+// =============================
+// LIFECYCLE
+// =============================
 onMounted(() => {
   if (typeof window !== 'undefined') loadUser()
   fetchStats()
   fetchDivisions()
 })
 
-const handleLogout = () => {
-  logout()
-}
+// =============================
+// ACTION
+// =============================
+const handleLogout = () => logout()
 
-// Refresh data
 const refreshData = () => {
   fetchStats()
   fetchDivisions()
 }
 
-// helpers warna
+// =============================
+// STYLE HELPERS
+// =============================
 const accentToBg = (a: string) =>
   a === 'green' ? 'bg-green-100 text-green-700' :
   a === 'blue' ? 'bg-blue-100 text-blue-700' :
@@ -114,28 +126,44 @@ const accentToNumberColor = (a: string) =>
 </script>
 
 <template>
-  <div class="flex h-screen bg-white-100">
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <!-- Logo atau icon bisa ditambah di sini -->
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">
+          SUPERADMIN
+        </h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-200">Profile</a>
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-200">Add Account</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a
+          href="/superadmin/super"
+          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
+        >🏠 Dashboard</a>
+        <a
+          href="/superadmin/profilsuper"
+          class="p-3 rounded-lg hover:bg-white/20 transition"
+        >👤 Profile</a>
+        <a
+          href="/superadmin/addaccount"
+          class="p-3 rounded-lg hover:bg-white/20 transition"
+        >➕ Add Account</a>
       </nav>
     </aside>
 
-    <!-- MAIN -->
-    <main class="flex-1 px-8 py-6 overflow-y-auto">
-      <!-- header -->
-      <div class="flex items-start justify-between gap-6">
+    <!-- Main -->
+    <main class="flex-1 p-10 overflow-y-auto relative">
+      <!-- Navbar -->
+      <div class="flex justify-between items-center mb-10">
         <div>
-          <h1 class="text-3xl font-bold">
-            WELCOME, <span class="text-indigo-700">{{ user?.username ?? 'Superadmin' }}</span>
-          </h1>
-          <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'SUPER ADMIN' }}</p>
+          <h2 class="text-2xl font-bold text-white drop-shadow-lg">
+            Welcome,
+            <span class="text-yellow-200">{{ user?.username ?? 'Superadmin' }}</span>
+          </h2>
+          <p class="text-sm text-white/80 tracking-wide uppercase">
+            {{ user?.role ?? 'SUPER ADMIN' }}
+          </p>
         </div>
 
         <div class="flex gap-2">
@@ -147,88 +175,80 @@ const accentToNumberColor = (a: string) =>
           </button>
           <button
             @click="handleLogout"
-            class="px-3 py-2 bg-red-500 text-white rounded shadow hover:bg-red-600 transition"
-          >
+            class="px-5 py-2 bg-white/30 backdrop-blur-md text-white font-bold rounded-lg shadow hover:bg-white/50 transition">
             Log Out
           </button>
         </div>
       </div>
 
-      <!-- stat cards -->
-      <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Stat Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div
           v-for="card in stats"
           :key="card.key"
-          class="p-5 rounded-lg shadow-sm bg-white flex items-center justify-between border"
+          class="p-5 rounded-2xl bg-white/30 backdrop-blur-md shadow-lg border border-white/40 hover:scale-105 hover:shadow-2xl transition-all"
         >
-          <div>
-            <div class="text-sm text-gray-500 uppercase">{{ card.label }}</div>
-            <div :class="['mt-2 text-3xl font-extrabold', accentToNumberColor(card.accent)]">
-              {{ card.value }}
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-sm text-white/80 uppercase">{{ card.label }}</div>
+              <div class="mt-2 text-4xl font-extrabold text-white">
+                {{ card.value }}
+              </div>
             </div>
-          </div>
-          <div :class="['p-3 rounded-full', accentToBg(card.accent)]">
-            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-width="1.5" d="M12 6v6l4 2"></path>
-              <circle cx="12" cy="12" r="9" stroke-width="1.5" />
-            </svg>
+            <div class="bg-white/40 p-3 rounded-full">
+              <svg
+                class="w-7 h-7 text-white"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 6v6l4 2"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- division summary -->
-      <section class="mt-10 bg-white p-6 rounded-lg shadow">
-        <div class="flex items-center justify-between">
+      <!-- Division Summary -->
+      <section
+        class="mt-12 bg-white/30 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-white/30"
+      >
+        <div class="flex justify-between items-center mb-6">
           <div>
-            <h2 class="text-xl font-semibold">Department Summary</h2>
-            <p class="text-sm text-gray-500 mt-1">Ringkasan jumlah pegawai per department</p>
+            <h2 class="text-lg font-semibold text-white">Department Summary</h2>
+            <p class="text-sm text-white/80">Jumlah pegawai per department</p>
           </div>
-          <div class="flex items-center gap-3">
-            <input 
-              v-model="search" 
-              placeholder="Cari department..." 
-              class="px-3 py-2 border rounded-md w-64"
-            />
-            <span class="text-sm text-gray-500">
-              Total: {{ divisions.reduce((sum, div) => sum + div.count, 0) }}
-            </span>
-          </div>
+          <input
+            v-model="search"
+            placeholder="Cari department..."
+            class="px-4 py-2 rounded-lg border border-white/40 bg-white/20 text-white placeholder-white/70 focus:outline-none"
+          />
         </div>
 
-        <!-- list division -->
-        <ul class="mt-6 space-y-4" v-if="filteredDivisions.length > 0">
+        <ul class="space-y-4" v-if="filteredDivisions.length">
           <li
             v-for="div in filteredDivisions"
             :key="div.id"
-            class="flex items-center justify-between p-3 hover:bg-gray-50 rounded"
+            class="flex items-center justify-between bg-white/20 p-3 rounded-xl"
           >
-            <span class="font-medium text-gray-800">{{ div.name }}</span>
-            <div class="flex-1 mx-4 h-2 bg-gray-200 rounded">
+            <span class="font-medium text-white">{{ div.name }}</span>
+            <div class="flex-1 mx-4 h-2 bg-white/30 rounded-full">
               <div
-                class="h-2 bg-indigo-500 rounded transition-all duration-500"
+                class="h-2 bg-yellow-300 rounded-full transition-all duration-700"
                 :style="{ width: (div.count / totalWorkers * 100) + '%' }"
-              />
+              ></div>
             </div>
-            <span class="text-gray-600 font-medium min-w-12 text-right">{{ div.count }} orang</span>
+            <span class="text-white font-semibold min-w-12 text-right">
+              {{ div.count }} org
+            </span>
           </li>
         </ul>
-        
-        <!-- empty state -->
-        <div v-else class="mt-6 text-center py-8 text-gray-500">
-          <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p>Tidak ada department yang ditemukan</p>
+        <div v-else class="text-center text-white/70 py-8">
+          Tidak ada department ditemukan
         </div>
       </section>
-
-      <!-- debug info (bisa dihapus di production) -->
-      <div class="mt-6 p-4 bg-gray-100 rounded text-xs">
-        <div class="font-semibold mb-2">Debug Info:</div>
-        <div>User Role: {{ user?.role }}</div>
-        <div>Total Departments: {{ divisions.length }}</div>
-        <div>Total Users in Stats: {{ stats.reduce((sum, stat) => sum + stat.value, 0) }}</div>
-      </div>
     </main>
   </div>
 </template>

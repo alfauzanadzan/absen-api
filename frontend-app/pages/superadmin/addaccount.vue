@@ -210,35 +210,28 @@ const remove = async (acct: Account) => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
-    <!-- SIDEBAR -->
-    <aside class="w-60 bg-white p-6 flex flex-col shadow">
-      <div class="flex items-center justify-center h-20 mb-6 font-bold text-xl text-blue-700">
-        SUPERADMIN
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">SUPERADMIN</h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded hover:bg-gray-100">Profile</a>
-        <a
-          href="/superadmin/addaccount"
-          class="p-2 rounded bg-blue-100 text-blue-600 font-medium"
-        >
-          Add Account
-        </a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/superadmin/super" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/superadmin/addaccount" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">➕ Add Account</a>
       </nav>
     </aside>
 
     <!-- MAIN -->
-    <main class="flex-1 p-8 overflow-y-auto">
+    <main class="flex-1 p-8 overflow-y-auto text-gray-800">
       <!-- HEADER -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-extrabold text-gray-800">
-            Halo, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
-          </h1>
-          <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">
-            {{ user?.role ?? 'ADMIN' }}
-          </p>
+          
         </div>
 
         <button
@@ -254,15 +247,15 @@ const remove = async (acct: Account) => {
         <input
           v-model="q"
           placeholder="Cari akun..."
-          class="px-4 py-2 border rounded-md w-80 bg-white/90 shadow-sm focus:ring-2 focus:ring-blue-400 outline-none"
+          class="px-4 py-2 border-none rounded-lg w-80 bg-white/30 backdrop-blur-sm text-gray-800 shadow-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-white/50"
         />
         <span class="text-sm text-gray-500">Total: {{ accounts.length }}</span>
       </div>
 
       <!-- TABLE -->
-      <div class="mt-6 bg-white rounded-md shadow overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-gray-100">
+      <div class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+        <table class="min-w-full text-gray-800">
+          <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
             <tr>
               <th class="p-4 text-left">Username</th>
               <th class="p-4 text-left">Nama Lengkap</th>
@@ -278,8 +271,8 @@ const remove = async (acct: Account) => {
             <tr
               v-for="acct in filtered"
               :key="acct.id"
-              class="border-t hover:bg-gray-50 transition"
-            >
+               class="border-t border-white/40 hover:bg-white/30 transition duration-200">
+            
               <td class="p-4 font-medium text-gray-800">{{ acct.username }}</td>
               <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4 text-gray-500">{{ acct.email }}</td>

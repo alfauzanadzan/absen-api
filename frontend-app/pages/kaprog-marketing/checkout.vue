@@ -32,7 +32,11 @@ watch(route, updateMode)
 // 🕒 Jam real-time
 const updateClock = () => {
   const now = new Date()
-  time.value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  time.value = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
 }
 
 // 🔑 Token
@@ -62,7 +66,8 @@ const postAttendance = async (payload: Record<string, any>) => {
 
     const json = text ? JSON.parse(text) : {}
     message.value =
-      json?.message ?? `✅ ${mode.value === "checkin" ? "Check-in" : "Check-out"} berhasil`
+      json?.message ??
+      `✅ ${mode.value === "checkin" ? "Check-in" : "Check-out"} berhasil`
     return true
   } catch (err: any) {
     message.value = `⚠️ Error koneksi: ${err?.message || err}`
@@ -87,11 +92,11 @@ const handleDecodedRaw = async (raw: string) => {
 
   console.log(`🔍 Barcode hasil scan (${mode.value}):`, raw)
 
-  // 🚫 Batas jam check-out = 17:00 (jam 5 sore)
+  // 🚫 Batas jam check-out = 15:00 (jam 3 sore)
   if (mode.value === "checkout") {
     const now = new Date()
-    if (now.getHours() < 17) {
-      message.value = "⚠️ Check-out hanya dapat dilakukan setelah pukul 17:00"
+    if (now.getHours() < 15) {
+      message.value = "⚠️ Check-out hanya dapat dilakukan setelah pukul 15:00"
       debounceLock = false
       return
     }
@@ -99,8 +104,15 @@ const handleDecodedRaw = async (raw: string) => {
 
   const payload =
     mode.value === "checkin"
-      ? { userId: String(user.value.id), role: String(user.value.role), qrValue: String(raw) }
-      : { userId: String(user.value.id), qrValue: String(raw) }
+      ? {
+          userId: String(user.value.id),
+          role: String(user.value.role),
+          qrValue: String(raw),
+        }
+      : {
+          userId: String(user.value.id),
+          qrValue: String(raw),
+        }
 
   await postAttendance(payload)
 
@@ -122,10 +134,15 @@ const startScanner = async () => {
     scanning.value = true
 
     const constraints = { video: { facingMode: { ideal: "environment" } } }
-    await qrReader.decodeFromConstraints(constraints, videoRef.value, (result: any, err: any) => {
-      if (result) handleDecodedRaw(result.getText())
-      else if (err && err.name !== "NotFoundException") console.debug("Scanner error:", err)
-    })
+    await qrReader.decodeFromConstraints(
+      constraints,
+      videoRef.value,
+      (result: any, err: any) => {
+        if (result) handleDecodedRaw(result.getText())
+        else if (err && err.name !== "NotFoundException")
+          console.debug("Scanner error:", err)
+      }
+    )
   } catch (e: any) {
     cameraError.value = e?.message || "Gagal inisialisasi kamera"
     scanning.value = false
@@ -157,24 +174,37 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div
+    class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500"
+  >
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col shadow">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">
-          {{ user?.name || "Nama User" }}
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1
+          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
+        >
+          KAPROG MARKETING
         </h1>
       </div>
 
-      <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-marketing/kaprogmarketing" class="p-2 rounded hover:bg-gray-200">🏠 Dashboard</a>
-        <a href="/kaprog-marketing/checkin" class="p-2 rounded hover:bg-gray-200">🕓 Check-in</a>
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a
+          href="/kaprog-marketing/kaprogmarketing"
+          class="p-3 rounded-lg hover:bg-white/20 transition"
+          >🏠 Dashboard</a
+        >
+        <a
+          href="/kaprog-marketing/checkin"
+          class="p-3 rounded-lg hover:bg-white/20 transition"
+          >🕓 Check-in</a
+        >
         <a
           href="/kaprog-marketing/checkout"
-          class="p-2 rounded bg-blue-50 text-blue-600 font-medium"
+          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
+          >⏰ Check-out</a
         >
-          ⏰ Check-out
-        </a>
       </nav>
     </aside>
 
@@ -208,9 +238,17 @@ onBeforeUnmount(() => {
 
         <!-- Scanner -->
         <div class="flex flex-col items-center gap-4">
-          <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow-lg">
+          <div
+            class="w-80 h-80 bg-black rounded overflow-hidden relative shadow-lg"
+          >
             <client-only>
-              <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover" />
+              <video
+                ref="videoRef"
+                autoplay
+                muted
+                playsinline
+                class="w-full h-full object-cover"
+              />
             </client-only>
 
             <div
@@ -236,7 +274,9 @@ onBeforeUnmount(() => {
 
           <!-- Status -->
           <div class="text-center mt-2">
-            <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
+            <p v-if="cameraError" class="text-sm text-red-600">
+              {{ cameraError }}
+            </p>
             <p
               v-else-if="message"
               class="text-sm font-medium"

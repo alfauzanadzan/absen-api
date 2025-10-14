@@ -1,92 +1,121 @@
 <template>
-  <div class="flex h-screen bg-white">
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">KAPROG IT</h1>
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">
+          KAPROG IT
+        </h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/kaprog-it/kaprogit" class="p-2 rounded hover:bg-gray-100">Dashboard</a>
-        <a href="/kaprog-it/profilkaprog" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Profile</a>
-        <a href="/kaprog-it/attendance" class="p-2 rounded hover:bg-gray-100">Attendance</a>
-        <a href="/kaprog-it/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/kaprog-it/kaprogit" class="p-3 rounded-lg hover:bg-white/20 transition">
+          🏠 Dashboard
+        </a>
+        <a href="/kaprog-it/profilkaprog" class="p-3 rounded-lg bg-white/30 shadow hover:bg-white/40 transition">
+          👤 Profile
+        </a>
+        <a href="/kaprog-it/attendance" class="p-3 rounded-lg hover:bg-white/20 transition">
+          📝 Attendance
+        </a>
+        <a href="/kaprog-it/reports" class="p-3 rounded-lg hover:bg-white/20 transition">
+          📊 Reports
+        </a>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex items-center justify-center">
-      <div class="bg-white shadow-md rounded-lg p-6 w-80 text-center">
-        <!-- Garis atas kecil -->
-        <div class="w-10 h-0.5 bg-black mx-auto mb-2"></div>
+    <main class="flex-1 p-8 relative overflow-y-auto">
+      <div class="flex flex-col items-center justify-center h-[75vh]">
+        <div
+          class="bg-white/25 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-10 text-center max-w-md w-full"
+        >
+          <!-- Foto Profil -->
+          <div class="relative flex items-center justify-center mb-5">
+            <div
+              v-if="!user?.avatar"
+              class="h-24 w-24 rounded-full bg-white/50 flex items-center justify-center text-3xl font-bold text-pink-600 border border-white shadow-lg"
+            >
+              {{ getInitials(user?.username) }}
+            </div>
+            <img
+              v-else
+              :src="user.avatar"
+              alt="Profile"
+              class="h-24 w-24 rounded-full border border-white shadow-lg object-cover"
+            />
+          </div>
 
-        <!-- Judul -->
-        <h2 class="text-sm font-semibold mb-4">Profil Saya</h2>
+          <!-- Username -->
+          <h3 class="font-bold text-lg text-gray-800">
+            {{ user?.username || "Pekerja IT" }}
+          </h3>
 
-        <!-- Foto Profil -->
-        <div class="flex items-center justify-center mb-4">
-          <img
-            :src="user?.avatar || '/images/default-avatar.png'"
-            alt="Profile"
-            class="h-20 w-20 rounded-full border object-cover"
-          />
+          <!-- Email -->
+          <p class="text-gray-500 text-sm mt-1">
+            {{ user?.email || "Belum ada email" }}
+          </p>
+
+          <!-- Jabatan -->
+          <p class="text-xs text-gray-700 font-semibold mt-3">
+            {{ user?.position || "Divisi Programming" }}
+          </p>
+
+          <!-- Instansi -->
+          <p class="text-xs text-gray-500 mt-1">
+            {{ user?.instansi || "Dinas Komunikasi dan Informatika Provinsi Sumatera Utara" }}
+          </p>
+
+          <div class="w-full h-px bg-white/40 my-6"></div>
+
+          <button
+            @click="goDashboard"
+            class="px-6 py-2 bg-white/40 hover:bg-white/60 text-pink-700 font-semibold rounded-lg transition shadow-md"
+          >
+            Kembali ke Dashboard
+          </button>
         </div>
-
-        <!-- Email -->
-        <p class="text-gray-600 text-sm">
-          {{ user?.email ?? "Belum ada email" }}
-        </p>
-
-        <!-- Nama -->
-        <h3 class="font-bold text-lg mt-1">
-          {{ user?.username ?? "Kaprog" }}
-        </h3>
-
-        <!-- Jabatan -->
-        <p class="text-xs text-gray-700 font-semibold mt-2">
-          {{ user?.position ?? "KEPALA SEKSI PENGEMBANGAN BIDANG IT" }}
-        </p>
-
-        <!-- Instansi -->
-        <p class="text-xs text-gray-500 mt-1">
-          {{
-            user?.instansi ??
-              "Dinas Komunikasi dan Informatika Provinsi Sumatera Utara"
-          }}
-        </p>
-
-        <!-- Garis bawah kecil -->
-        <div class="w-full h-px bg-gray-300 mt-4"></div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
-import { useFetch } from "#app"
+definePageMeta({
+  middleware: ["role"],
+})
 
-const user = ref<any>(null)
+import { ref, onMounted } from "vue"
+import { useRouter } from "vue-router"
+import { useAuth } from "@/composables/useAuth"
+
+const { user, loadUser } = useAuth()
+const router = useRouter()
 
 onMounted(async () => {
-  try {
-    // Ganti URL sesuai API backend kamu
-    const { data, error } = await useFetch("http://localhost:3000/users/me", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`, // pakai JWT kalau ada
-      },
-    })
-
-    if (!error.value && data.value) {
-      user.value = data.value
-    } else {
-      console.error("Gagal memuat user:", error.value)
-    }
-  } catch (err) {
-    console.error("Terjadi kesalahan:", err)
-  }
+  await loadUser()
 })
+
+const goDashboard = () => {
+  router.push("/kaprog-it/kaprogit")
+}
+
+function getInitials(name?: string): string {
+  if (!name) return "A"
+  const parts = name.trim().split(" ")
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
+}
 </script>
 
 <style scoped>
-/* styling khusus halaman profil */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+}
 </style>

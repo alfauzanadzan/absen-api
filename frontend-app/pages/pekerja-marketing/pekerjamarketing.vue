@@ -20,6 +20,7 @@ const updateClock = () => {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hour12: false, // ⬅️ Tambahkan ini biar hilang AM/PM
   })
 }
 
@@ -47,28 +48,33 @@ const goToCheckoutPage = () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-white">
-    <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">PEKERJA MARKETING</h1>
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1
+          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
+        >
+          PEKERJA MARKETING
+        </h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/pekerja-marketing/pekerjamarketing" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">🏠 Dashboard</a>
-        <a href="/pekerja-marketing/profilpekerja" class="p-2 rounded hover:bg-gray-100">Profile</a>
-        <a href="/pekerja-marketing/reports" class="p-2 rounded hover:bg-gray-100">Reports</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/pekerja-marketing/pekerjamarketing" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">🏠 Dashboard</a>
+        <a href="/pekerja-marketing/profilpekerja" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/pekerja-marketing/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
+    <main class="flex-1 p-8 relative overflow-y-auto">
+      <!-- Header dengan Logout di pojok kanan atas -->
+      <div class="flex justify-between items-center mb-10">
         <div>
-          <h2 class="text-2xl font-bold">
-            WELCOME, {{ user?.username || "User" }}
+          <h2 class="text-2xl font-bold text-white drop-shadow-md">
+            WELCOME, {{ user?.username }}
           </h2>
-          <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
+          <p class="text-sm text-white/80 uppercase">{{ user?.role }}</p>
         </div>
 
         <!-- Tombol Logout -->
@@ -83,13 +89,15 @@ const goToCheckoutPage = () => {
       </div>
 
       <!-- Clock + Actions -->
-      <div class="flex flex-col items-center justify-center mt-20">
-        <!-- Jam besar -->
-        <p class="text-8xl font-bold tracking-wide">{{ time }}</p>
-
-        <!-- Status -->
+      <div
+        class="flex flex-col items-center justify-center mt-28 bg-white/20 backdrop-blur-md rounded-3xl border border-white/30 shadow-2xl p-12 mx-auto text-center max-w-2xl"
+      >
+        <!-- Realtime clock -->
+        <p class="text-8xl font-extrabold text-white drop-shadow-md mb-6">
+          {{ time }}
+        </p>
         <p class="mt-4 text-gray-600">
-          You have not checked in today
+          Pilih mode check-in / check-out dan scan barcode
         </p>
 
         <!-- Tombol aksi -->

@@ -1,107 +1,61 @@
 <template>
-  <div class="flex h-screen bg-gray-50">
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-lg p-6 flex flex-col justify-between">
-      <div>
-        <!-- Header -->
-        <div class="flex items-center justify-center mb-10">
-          <h1 class="text-xl font-bold text-blue-600 tracking-wide">ADMIN PANEL</h1>
-        </div>
-
-        <!-- Navigation -->
-        <nav class="flex flex-col space-y-2">
-          <NuxtLink
-            to="/admin/admin"
-            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
-          >
-            Dashboard
-          </NuxtLink>
-          <NuxtLink
-            to="/admin/profiladmin"
-            class="p-2 rounded-md bg-blue-100 text-blue-600 font-semibold"
-          >
-            Profile
-          </NuxtLink>
-          <NuxtLink
-            to="/admin/addaccount"
-            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
-          >
-            Add Account
-          </NuxtLink>
-          <NuxtLink
-            to="/admin/attendance"
-            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
-          >
-            Attendance
-          </NuxtLink>
-          <NuxtLink
-            to="/admin/reports"
-            class="p-2 rounded-md transition hover:bg-blue-50 hover:text-blue-600"
-          >
-            Reports
-          </NuxtLink>
-        </nav>
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
 
-      <!-- Footer -->
-      <div class="text-center text-xs text-gray-400 mt-6">
-        © 2025 Diskominfo Sumut
-      </div>
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/admin/profiladmin" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">👤 Profile</a>
+        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+        <a href="/admin/attendance" class="p-3 rounded-lg hover:bg-white/20 transition">📝 Attendance</a>
+        <a href="/admin/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
+      </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex items-center justify-center p-8">
-      <div
-        class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md text-center border border-gray-100"
-      >
-        <!-- Garis atas -->
-        <div class="w-12 h-1 bg-blue-500 mx-auto mb-3 rounded"></div>
-
-        <!-- Judul -->
-        <h2 class="text-lg font-bold text-gray-700 mb-6">Profil Saya</h2>
-
-        <!-- Foto Profil -->
-        <div class="relative flex items-center justify-center mb-5">
-          <div
-            v-if="!user?.avatar"
-            class="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-3xl font-bold text-blue-600 border border-blue-300"
-          >
-            {{ user?.username?.charAt(0)?.toUpperCase() ?? 'A' }}
+    <main class="flex-1 p-8 relative overflow-y-auto">
+      <div class="flex flex-col items-center justify-center h-[75vh]">
+        <div
+          class="bg-white/25 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-10 text-center max-w-md w-full">
+          <div class="relative flex items-center justify-center mb-5">
+            <div
+              v-if="!user?.avatar"
+              class="h-24 w-24 rounded-full bg-white/50 flex items-center justify-center text-3xl font-bold text-pink-600 border border-white shadow-lg" >
+              {{ user?.username?.charAt(0)?.toUpperCase() ?? 'A' }}
+            </div>
+            <img
+              v-else
+              :src="user.avatar"
+              alt="Profile"
+              class="h-24 w-24 rounded-full border border-white shadow-lg object-cover" />
           </div>
-          <img
-            v-else
-            :src="user.avatar"
-            alt="Profile"
-            class="h-24 w-24 rounded-full border object-cover"
-          />
-        </div>
 
-        <!-- Info User -->
-        <div class="space-y-1">
-          <h3 class="font-bold text-xl text-gray-800">
+          <h3 class="text-2xl font-bold text-white drop-shadow-sm">
             {{ user?.username ?? 'Admin' }}
           </h3>
-          <p class="text-gray-500 text-sm">
+          <p class="text-white/90 text-sm mt-1">
             {{ user?.email ?? 'admin@diskominfo.sumutprov.go.id' }}
           </p>
-          <p class="text-gray-600 font-semibold text-sm mt-2">
+          <p class="text-white/80 text-sm mt-3 font-semibold">
             {{ user?.position ?? 'ADMINISTRATOR' }}
           </p>
-          <p class="text-xs text-gray-500 mt-1 leading-snug">
+          <p class="text-white/80 text-xs mt-1 leading-snug">
             {{ user?.instansi ?? 'Dinas Komunikasi dan Informatika Provinsi Sumatera Utara' }}
           </p>
+
+          <div class="w-full h-px bg-white/40 my-6"></div>
+
+          <button
+            @click="goDashboard"
+            class="px-6 py-2 bg-white/40 hover:bg-white/60 text-pink-700 font-semibold rounded-lg transition shadow-md"
+          >
+            Kembali ke Dashboard
+          </button>
         </div>
-
-        <!-- Garis bawah -->
-        <div class="w-full h-px bg-gray-200 mt-6 mb-3"></div>
-
-        <!-- Tombol -->
-        <button
-          @click="goDashboard"
-          class="mt-3 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-        >
-          Kembali ke Dashboard
-        </button>
       </div>
     </main>
   </div>
@@ -122,3 +76,5 @@ const goDashboard = () => {
   navigateTo('/admin/admin')
 }
 </script>
+
+profile admin

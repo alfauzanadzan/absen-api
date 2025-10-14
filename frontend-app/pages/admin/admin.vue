@@ -16,6 +16,7 @@ const updateClock = () => {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+     hour12: false, // ⬅️ Tambahkan ini biar hilang AM/PM
   })
 }
 
@@ -53,51 +54,49 @@ const checkOut = async () => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-white-100">
-    <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">ADMIN</h1>
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/admin/addaccount" class="p-2 rounded hover:bg-gray-400">Add Account</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/admin/admin" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">🏠 Dashboard</a>
+        <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+        <a href="/admin/attendance" class="p-3 rounded-lg hover:bg-white/20 transition">📝 Attendance</a>
+        <a href="/admin/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
+    <main class="flex-1 p-8 relative overflow-y-auto">
+      <!-- Header dengan Logout di pojok kanan atas -->
+      <div class="flex justify-between items-center mb-10">
         <div>
-          <h2 class="text-2xl font-bold">WELCOME, {{ user?.username }}</h2>
-          <p class="text-sm text-gray-600 uppercase">{{ user?.role }}</p>
+          <h2 class="text-2xl font-bold text-white drop-shadow-md">
+            WELCOME, {{ user?.username }}
+          </h2>
+          <p class="text-sm text-white/80 uppercase">{{ user?.role }}</p>
         </div>
 
-        <!-- Jam + Logout -->
-        <div class="flex items-center gap-4">
-          <button
-            @click="logout"
-            class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-          >
-            Log Out
-          </button>
-        </div>
+        <button
+          @click="logout()"
+          class="px-5 py-2 bg-white/30 backdrop-blur-md text-white font-bold rounded-lg shadow hover:bg-white/50 transition">
+          Log Out
+        </button>
       </div>
 
-      <!-- Clock + Actions -->
-       <br>
-       <br>
-       <br>
-      <div class="flex flex-col items-center justify-center mt-20">
+      <!-- Card utama -->
+      <div
+        class="flex flex-col items-center justify-center mt-28 bg-white/20 backdrop-blur-md rounded-3xl border border-white/30 shadow-2xl p-12 mx-auto text-center max-w-2xl"
+      >
         <!-- Jam besar -->
-        <p class="text-8xl font-bold">{{ time }}</p>
+        <p class="text-8xl font-extrabold text-white drop-shadow-md mb-6">
+          {{ time }}
+        </p>
 
-        <!-- Status (contoh statis, bisa ambil dari DB juga) -->
-        <p class="mt-4 text-gray-600">You have not checked in today</p>
-        <br>
       </div>
     </main>
   </div>

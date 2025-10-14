@@ -47,7 +47,7 @@ const postAttendance = async (payload: { userId: string; role: string; qrValue: 
     alert("✅ Absen berhasil!")
 
     setTimeout(() => {
-      router.push("/dashboard")
+      router.push("/pekerja-marketing/pekerjamarketing")
     }, 1000)
 
     return true
@@ -136,32 +136,48 @@ onBeforeUnmount(() => { if (clockInterval) clearInterval(clockInterval); stopSca
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">PEKERJA MARKETING</h1>
+  <div
+    class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500"
+  >
+    <!-- SIDEBAR -->
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1
+          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
+        >
+          PEKERJA MARKETING
+        </h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/pekerja-marketing/pekerjamarketing" class="p-2 rounded hover:bg-gray-400">🏠 Dashboard</a>
-        <a href="/pekerja-marketing/checkin" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">🕓 Check-in</a>
-        <a href="/pekerja-marketing/checkout" class="p-2 rounded hover:bg-gray-400">⏰ Check-out</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a
+          href="/pekerja-marketing/pekerjamarketing"
+          class="p-3 rounded-lg hover:bg-white/20 transition"
+          >🏠 Dashboard</a
+        >
+        <a
+          href="/pekerja-marketing/checkin"
+          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
+          >🕓 Check-in</a
+        >
+        <a
+          href="/pekerja-marketing/checkout"
+          class="p-3 rounded-lg hover:bg-white/20 transition"
+          >⏰ Check-out</a
+        >
       </nav>
     </aside>
 
-    <!-- Main -->
-    <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
-      <div class="w-full max-w-2xl">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-bold">Scan QR Department</h1>
-            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code Marketing Department</p>
-            <p class="text-xs text-gray-400 mt-1">Department: {{ user?.department?.name || "Belum ada" }}</p>
-          </div>
-          <div class="text-right">
-            <div class="text-3xl font-bold">{{ time }}</div>
-            <div class="text-xs text-gray-500 mt-1">{{ user?.username ?? "User" }}</div>
-          </div>
+    <!-- MAIN -->
+    <main class="flex-1 p-8 flex flex-col items-center justify-center">
+      <div class="w-full max-w-md">
+        <!-- Header -->
+        <div class="mb-6 text-center">
+          <h1 class="text-2xl font-bold">Check-in Absensi</h1>
+          <div class="text-3xl font-bold mt-2">{{ time }}</div>
+          <p class="text-gray-100 mt-1">{{ user?.username ?? "User" }}</p>
         </div>
 
         <!-- Scanner -->

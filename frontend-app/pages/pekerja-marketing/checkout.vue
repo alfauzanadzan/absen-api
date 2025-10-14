@@ -160,9 +160,11 @@ onBeforeUnmount(() => {
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
     <aside class="w-60 bg-white p-6 flex flex-col shadow">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">
-          {{ user?.name || "Nama User" }}
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1
+          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
+        >
+          PEKERJA MARKETING
         </h1>
       </div>
 

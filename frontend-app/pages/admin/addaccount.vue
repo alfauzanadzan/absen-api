@@ -1,27 +1,25 @@
 <template>
-  <div class="flex h-screen bg-white-100">
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">ADMIN</h1>
+    <aside class="w-64 bg-white/20 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/admin/admin" class="p-2 rounded hover:bg-gray-200">Dashboard</a>
-        <a href="/admin/profiladmin" class="p-2 rounded hover:bg-gray-400">Profile</a>
-        <a href="/admin/addaccount" class="p-2 rounded bg-blue-100 text-blue-600 font-medium">Add Account</a>
-        <a href="/admin/attendance" class="p-2 rounded hover:bg-gray-400">Attendance</a>
-        <a href="/admin/reports" class="p-2 rounded hover:bg-gray-400">Reports</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/admin/addaccount" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">➕ Add Account</a>
+        <a href="/admin/attendance" class="p-3 rounded-lg hover:bg-white/20 transition">📝 Attendance</a>
+        <a href="/admin/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8 overflow-y-auto">
+    <main class="flex-1 p-8 overflow-y-auto text-gray-800">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-extrabold">
-            Halo, <span class="font-medium text-gray-700">{{ user?.username ?? 'Admin' }}</span>
-          </h1>
-          <p class="text-sm text-gray-500 mt-1 uppercase tracking-wide">{{ user?.role ?? 'ADMIN' }}</p>
+          
         </div>
         <button @click="openAdd" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">
           Tambah Akun
@@ -30,14 +28,18 @@
 
       <!-- Search -->
       <div class="mt-6 flex items-center gap-3">
-        <input v-model="q" placeholder="Cari akun..." class="px-4 py-2 border rounded-md w-80 bg-white/90" />
+        <input
+          v-model="q"
+          placeholder="Cari akun..."
+          class="px-4 py-2 border-none rounded-lg w-80 bg-white/30 backdrop-blur-sm text-gray-800 shadow-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-white/50"
+        />
         <span class="text-sm text-gray-500">Total: {{ accounts.length }}</span>
       </div>
 
       <!-- Table -->
-      <div class="mt-6 bg-white rounded-md shadow overflow-x-auto">
-        <table class="min-w-full">
-          <thead class="bg-gray-50">
+      <div class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+        <table class="min-w-full text-gray-800">
+          <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
             <tr>
               <th class="text-left p-4">Username</th>
               <th class="text-left p-4">Nama Lengkap</th>
@@ -49,7 +51,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="acct in filtered" :key="acct.id" class="border-t hover:bg-gray-50">
+            <tr v-for="acct in filtered" :key="acct.id" 
+            class="border-t border-white/40 hover:bg-white/30 transition duration-200">
               <td class="p-4">{{ acct.username }}</td>
               <td class="p-4">{{ acct.name ?? '-' }}</td>
               <td class="p-4">{{ acct.email }}</td>

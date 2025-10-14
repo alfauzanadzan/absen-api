@@ -3,25 +3,28 @@ import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import { useAuth } from '@/composables/useAuth'
 
-// 🔧 Runtime Config
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? 'http://localhost:3000'
 
 const { user, loadUser, logout } = useAuth()
 
-// 🕒 UI Clock
+// 🕒 Clock
 const today = new Date()
 const pad = (n: number) => (n < 10 ? '0' + n : String(n))
-const displayDate = `Today ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
+const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
 const time = ref('')
 let clockInterval: number | null = null
 
 const updateClock = () => {
   const now = new Date()
-  time.value = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  time.value = now.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
 }
 
-// 📋 Attendance Data & State
+// 📋 Data & State
 type AttendanceRow = {
   id: string
   userId: string
@@ -30,11 +33,12 @@ type AttendanceRow = {
   date: string
   timeIn: string
   timeOut: string
-  status: string
-  raw: any
+  statusIn: string
+  statusOut: string
 }
 
-const attendances = ref<AttendanceRow[]>([])
+const checkins = ref<AttendanceRow[]>([])
+const checkouts = ref<AttendanceRow[]>([])
 const showModal = ref(false)
 
 const editingRecord = reactive({
@@ -44,7 +48,8 @@ const editingRecord = reactive({
   date: '',
   timeIn: '',
   timeOut: '',
-  status: '',
+  statusIn: '',
+  statusOut: ''
 })
 
 const pollIntervalMs = 5000
@@ -59,8 +64,8 @@ const fetchAttendances = async () => {
     const res = await fetch(`${apiBase}/attendance`, {
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
     })
 
     if (!res.ok) {
@@ -69,16 +74,29 @@ const fetchAttendances = async () => {
     }
 
     const data = await res.json().catch(() => [])
-    attendances.value = (data || []).map((a: any) => {
-      const name = a.user?.name ?? a.user?.username ?? 'Unknown'
-      const department = a.departmentName ?? a.user?.departmentName ?? a.user?.department ?? '-'
+    const normalStart = 8
+    const normalEnd = 17
 
+    const parsed = (data || []).map((a: any) => {
+      const name = a.user?.name ?? a.user?.username ?? 'Unknown'
+      const department = a.departmentName ?? a.user?.departmentName ?? '-'
       const timeInDate = a.timeIn ? new Date(a.timeIn) : null
       const timeOutDate = a.timeOut ? new Date(a.timeOut) : null
-      const dateObj = a.date ? new Date(a.date) : null
-      const date = dateObj
-        ? `${pad(dateObj.getDate())}-${pad(dateObj.getMonth() + 1)}-${dateObj.getFullYear()}`
-        : '-'
+      const dateObj = a.date ? new Date(a.date) : new Date()
+      const date = `${pad(dateObj.getDate())}-${pad(dateObj.getMonth() + 1)}-${dateObj.getFullYear()}`
+
+      // ✅ Status terpisah
+      let statusIn = '-'
+      let statusOut = '-'
+
+      if (timeInDate) {
+        const jamMasuk = timeInDate.getHours() + timeInDate.getMinutes() / 60
+        statusIn = jamMasuk > normalStart ? 'LATE' : 'PRESENT'
+      }
+      if (timeOutDate) {
+        const jamKeluar = timeOutDate.getHours() + timeOutDate.getMinutes() / 60
+        statusOut = jamKeluar >= normalEnd ? 'COMPLETED' : 'EARLY'
+      }
 
       return {
         id: a.id,
@@ -92,47 +110,45 @@ const fetchAttendances = async () => {
         timeOut: timeOutDate
           ? timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           : '-',
-        status: a.status ?? 'UNKNOWN',
-        raw: a,
+        statusIn,
+        statusOut
       }
     })
+
+    checkins.value = parsed.filter(a => a.timeIn !== '-')
+    checkouts.value = parsed.filter(a => a.timeOut !== '-')
   } catch (err) {
-    console.error('fetchAttendances error', err)
+    console.error('fetchAttendances error:', err)
   }
 }
 
-// ✍️ Manual Edit Modal
+// ✍ Modal Edit
 const openEdit = (rec: AttendanceRow) => {
-  editingRecord.id = rec.id
-  editingRecord.name = rec.name
-  editingRecord.department = rec.department
-  editingRecord.date = rec.date
-  editingRecord.timeIn = rec.timeIn
-  editingRecord.timeOut = rec.timeOut
-  editingRecord.status = rec.status
+  Object.assign(editingRecord, rec)
   showModal.value = true
 }
 
 const closeModal = () => {
   showModal.value = false
   setTimeout(() => {
-    editingRecord.id = null
-    editingRecord.name = ''
-    editingRecord.department = ''
-    editingRecord.date = ''
-    editingRecord.timeIn = ''
-    editingRecord.timeOut = ''
-    editingRecord.status = ''
+    Object.assign(editingRecord, {
+      id: null,
+      name: '',
+      department: '',
+      date: '',
+      timeIn: '',
+      timeOut: '',
+      statusIn: '',
+      statusOut: ''
+    })
   }, 150)
 }
 
 const saveEdit = () => {
-  const idx = attendances.value.findIndex((r) => r.id === editingRecord.id)
-  if (idx !== -1 && attendances.value[idx]) {
-    attendances.value[idx].timeIn = editingRecord.timeIn
-    attendances.value[idx].timeOut = editingRecord.timeOut
-    attendances.value[idx].status = editingRecord.status
-  }
+  const idxIn = checkins.value.findIndex(r => r.id === editingRecord.id)
+  const idxOut = checkouts.value.findIndex(r => r.id === editingRecord.id)
+  if (idxIn !== -1) checkins.value[idxIn] = { ...checkins.value[idxIn], ...editingRecord }
+  if (idxOut !== -1) checkouts.value[idxOut] = { ...checkouts.value[idxOut], ...editingRecord }
   closeModal()
 }
 
@@ -141,7 +157,6 @@ onMounted(async () => {
   await loadUser()
   updateClock()
   clockInterval = window.setInterval(updateClock, 1000)
-
   await fetchAttendances()
   pollInterval = window.setInterval(fetchAttendances, pollIntervalMs)
 })
@@ -151,19 +166,21 @@ onBeforeUnmount(() => {
   if (pollInterval) clearInterval(pollInterval)
 })
 
-// 🎨 Status Color Helper
+// 🎨 Status color
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'PRESENT':
-      return 'text-yellow-600 bg-yellow-100'
+      return 'text-blue-700 bg-blue-100'
     case 'COMPLETED':
       return 'text-green-700 bg-green-100'
     case 'LATE':
-      return 'text-orange-600 bg-orange-100'
+      return 'text-orange-700 bg-orange-100'
+    case 'EARLY':
+      return 'text-yellow-700 bg-yellow-100'
     case 'ABSENT':
-      return 'text-red-600 bg-red-100'
+      return 'text-red-700 bg-red-100'
     default:
-      return 'text-gray-600 bg-gray-100'
+      return 'text-gray-700 bg-gray-100'
   }
 }
 </script>
@@ -171,7 +188,9 @@ const getStatusColor = (status: string) => {
 <template>
   <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
       <div class="flex items-center justify-center h-20 mb-8">
         <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
@@ -179,11 +198,14 @@ const getStatusColor = (status: string) => {
       <nav class="flex flex-col space-y-3 text-white font-medium">
         <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
         <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
-        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition"
+          >➕ Add Account</a
+        >
         <a
           href="/admin/attendance"
           class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
-        >📝 Attendance</a>
+          >📝 Attendance</a
+        >
         <a href="/admin/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
       </nav>
     </aside>
@@ -192,122 +214,102 @@ const getStatusColor = (status: string) => {
     <main class="flex-1 p-8 overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-3xl font-bold">ATTENDANCE</h1>
-          <div class="text-sm text-gray-600 mt-1">{{ displayDate }}</div>
+          <h1 class="text-3xl font-bold text-white drop-shadow-md">ATTENDANCE</h1>
+          <div class="text-sm text-gray-100 mt-1">{{ displayDate }}</div>
         </div>
-        <button @click="fetchAttendances" class="px-4 py-2 border rounded bg-white/50 hover:bg-white/70">
+        <button
+          @click="fetchAttendances"
+          class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition"
+        >
           Refresh
         </button>
       </div>
 
-      <!-- Attendance Table -->
-      <div
-        class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
-      >
-        <table class="min-w-full text-gray-800">
-          <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
-            <tr>
-              <th class="text-left px-6 py-3 font-semibold">Nama</th>
-              <th class="text-left px-6 py-3 font-semibold">Department</th>
-              <th class="text-left px-6 py-3 font-semibold">Tanggal</th>
-              <th class="text-left px-6 py-3 font-semibold">Time In</th>
-              <th class="text-left px-6 py-3 font-semibold">Time Out</th>
-              <th class="text-left px-6 py-3 font-semibold">Status</th>
-              <th class="text-left px-6 py-3 font-semibold">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr
-              v-for="rec in attendances"
-              :key="rec.id"
-              class="border-t border-white/40 hover:bg-white/30 transition duration-200"
-            >
-              <td class="px-6 py-3">{{ rec.name }}</td>
-              <td class="px-6 py-3">{{ rec.department }}</td>
-              <td class="px-6 py-3">{{ rec.date }}</td>
-              <td class="px-6 py-3">{{ rec.timeIn }}</td>
-              <td class="px-6 py-3">{{ rec.timeOut }}</td>
-              <td class="px-6 py-3">
-                <span
-                  :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.status)]"
-                >
-                  {{ rec.status }}
-                </span>
-              </td>
-              <td class="px-6 py-3">
-                <button
-                  class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-                  @click="openEdit(rec)"
-                >
-                  Edit
-                </button>
-              </td>
-            </tr>
-
-            <tr v-if="attendances.length === 0">
-              <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data kehadiran hari ini.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ✏️ Modal Edit Attendance -->
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div class="bg-white rounded-lg w-11/12 md:w-1/3 p-6">
-          <h3 class="text-lg font-semibold mb-4">Edit Attendance</h3>
-
-          <form @submit.prevent="saveEdit">
-            <div class="mb-3">
-              <label class="block text-sm font-medium mb-1">Nama</label>
-              <input
-                readonly
-                :value="editingRecord.name"
-                class="w-full border px-3 py-2 rounded bg-gray-50"
-              />
-            </div>
-
-            <div class="mb-3">
-              <label class="block text-sm font-medium mb-1">Time In</label>
-              <input
-                v-model="editingRecord.timeIn"
-                required
-                class="w-full border px-3 py-2 rounded"
-              />
-            </div>
-
-            <div class="mb-3">
-              <label class="block text-sm font-medium mb-1">Time Out</label>
-              <input
-                v-model="editingRecord.timeOut"
-                required
-                class="w-full border px-3 py-2 rounded"
-              />
-            </div>
-
-            <div class="mb-3">
-              <label class="block text-sm font-medium mb-1">Status</label>
-              <select v-model="editingRecord.status" class="w-full border px-3 py-2 rounded">
-                <option>PRESENT</option>
-                <option>COMPLETED</option>
-                <option>LATE</option>
-                <option>ABSENT</option>
-              </select>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-4">
-              <button type="button" class="px-4 py-2 rounded border" @click="closeModal">
-                Batal
-              </button>
-              <button type="submit" class="px-4 py-2 rounded bg-blue-500 text-white">
-                Simpan
-              </button>
-            </div>
-          </form>
+      <!-- Check-In -->
+      <section class="mb-10">
+        <h2 class="text-xl font-semibold mb-3 text-white">Check-In</h2>
+        <div
+          class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl overflow-x-auto border border-white/30"
+        >
+          <table class="min-w-full text-gray-800">
+            <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
+              <tr>
+                <th class="text-left px-6 py-3">Nama</th>
+                <th class="text-left px-6 py-3">Department</th>
+                <th class="text-left px-6 py-3">Tanggal</th>
+                <th class="text-left px-6 py-3">Jam Masuk</th>
+                <th class="text-left px-6 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="rec in checkins"
+                :key="rec.id"
+                class="border-t border-white/40 hover:bg-white/30 transition duration-200"
+              >
+                <td class="px-6 py-3">{{ rec.name }}</td>
+                <td class="px-6 py-3">{{ rec.department }}</td>
+                <td class="px-6 py-3">{{ rec.date }}</td>
+                <td class="px-6 py-3">{{ rec.timeIn }}</td>
+                <td class="px-6 py-3">
+                  <span
+                    :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.statusIn)]"
+                    >{{ rec.statusIn }}</span
+                  >
+                </td>
+              </tr>
+              <tr v-if="checkins.length === 0">
+                <td colspan="5" class="px-6 py-8 text-center text-gray-200 font-medium">
+                  Belum ada data Check-In.
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
+
+      <!-- Check-Out -->
+      <section>
+        <h2 class="text-xl font-semibold mb-3 text-white">Check-Out</h2>
+        <div
+          class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl overflow-x-auto border border-white/30"
+        >
+          <table class="min-w-full text-gray-800">
+            <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
+              <tr>
+                <th class="text-left px-6 py-3">Nama</th>
+                <th class="text-left px-6 py-3">Department</th>
+                <th class="text-left px-6 py-3">Tanggal</th>
+                <th class="text-left px-6 py-3">Jam Keluar</th>
+                <th class="text-left px-6 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="rec in checkouts"
+                :key="rec.id"
+                class="border-t border-white/40 hover:bg-white/30 transition duration-200"
+              >
+                <td class="px-6 py-3">{{ rec.name }}</td>
+                <td class="px-6 py-3">{{ rec.department }}</td>
+                <td class="px-6 py-3">{{ rec.date }}</td>
+                <td class="px-6 py-3">{{ rec.timeOut }}</td>
+                <td class="px-6 py-3">
+                  <span
+                    :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.statusOut)]"
+                    >{{ rec.statusOut }}</span
+                  >
+                </td>
+              </tr>
+              <tr v-if="checkouts.length === 0">
+                <td colspan="5" class="px-6 py-8 text-center text-gray-200 font-medium">
+                  Belum ada data Check-Out.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   </div>
 </template>
@@ -316,5 +318,12 @@ const getStatusColor = (status: string) => {
 table th,
 table td {
   vertical-align: middle;
+}
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
 }
 </style>

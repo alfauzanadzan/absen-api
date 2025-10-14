@@ -1,52 +1,37 @@
 <template>
-  <div class="flex h-screen bg-gray-50">
+   <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="w-60 bg-white shadow-md p-6 flex flex-col">
-      <div class="flex items-center justify-center h-20 mb-6 font-bold text-lg text-blue-600">
-        SUPERADMIN
+    <aside
+      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
+      <div class="flex items-center justify-center h-20 mb-8">
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">SUPERADMIN</h1>
       </div>
-      <nav class="flex flex-col space-y-2 text-gray-700">
-        <a href="/superadmin/super" class="p-2 rounded hover:bg-gray-100 transition">Dashboard</a>
-        <a href="/superadmin/profilsuper" class="p-2 rounded bg-blue-100 text-blue-600 font-medium shadow-sm">
-          Profile
-        </a>
-        <a href="/superadmin/addaccount" class="p-2 rounded hover:bg-gray-100 transition">Add Account</a>
+
+      <nav class="flex flex-col space-y-3 text-white font-medium">
+        <a href="/superadmin/super" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/superadmin/profilsuper" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">👤 Profile</a>
+        <a href="/superadmin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
       </nav>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex items-center justify-center p-8">
-      <div
-        class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-sm text-center transition-transform hover:scale-[1.02]"
-      >
-        <!-- Garis atas -->
-        <div class="w-12 h-1 bg-blue-600 mx-auto mb-4 rounded"></div>
-
-        <!-- Judul -->
-        <h2 class="text-base font-semibold text-gray-700 mb-6 tracking-wide uppercase">
-          Profil Saya
-        </h2>
-
-        <!-- Foto Profil -->
-        <div class="relative flex items-center justify-center mb-4">
-          <div
-            class="h-24 w-24 rounded-full border-4 border-blue-100 bg-gray-100 flex items-center justify-center overflow-hidden"
-          >
+    <main class="flex-1 p-8 relative overflow-y-auto">
+      <div class="flex flex-col items-center justify-center h-[75vh]">
+        <div
+          class="bg-white/25 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-10 text-center max-w-md w-full">
+          <div class="relative flex items-center justify-center mb-5">
+            <div
+              v-if="!user?.avatar"
+              class="h-24 w-24 rounded-full bg-white/50 flex items-center justify-center text-3xl font-bold text-pink-600 border border-white shadow-lg" >
+              {{ user?.username?.charAt(0)?.toUpperCase() ?? 'A' }}
+            </div>
             <img
-              v-if="user?.avatar"
+              v-else
               :src="user.avatar"
               alt="Profile"
-              class="h-full w-full object-cover"
-            />
-            <span v-else class="text-3xl font-semibold text-blue-600">
-              {{ user?.username?.charAt(0).toUpperCase() || 'A' }}
-            </span>
+              class="h-24 w-24 rounded-full border border-white shadow-lg object-cover" />
           </div>
-          <div
-            class="absolute bottom-0 right-1 bg-green-500 h-3 w-3 rounded-full border-2 border-white"
-            title="Online"
-          ></div>
-        </div>
 
         <!-- Info -->
         <div class="space-y-2">
@@ -68,15 +53,15 @@
         </div>
 
         <!-- Garis bawah -->
-        <div class="w-full h-px bg-gray-200 mt-6 mb-4"></div>
+        <div class="w-full h-px bg-white/40 my-6"></div>
 
-        <!-- Tombol Logout -->
-        <button
-          @click="logout"
-          class="px-4 py-2 bg-red-500 text-white text-sm rounded-md shadow hover:bg-red-600 transition"
-        >
-          Keluar Akun
-        </button>
+          <button
+            @click="goDashboard"
+            class="px-6 py-2 bg-white/40 hover:bg-white/60 text-pink-700 font-semibold rounded-lg transition shadow-md"
+          >
+            Kembali ke Dashboard
+          </button>
+      </div>
       </div>
     </main>
   </div>
@@ -85,8 +70,14 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useRouter } from 'vue-router'
 
 const { user, loadUser, logout } = useAuth()
+const router = useRouter()
+
+const goDashboard = () => {
+  router.push('/superadmin/super')
+}
 
 onMounted(() => {
   if (typeof window !== 'undefined') loadUser()
