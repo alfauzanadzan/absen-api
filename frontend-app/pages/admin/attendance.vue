@@ -1,63 +1,43 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRuntimeConfig } from '#imports'
 import { useAuth } from '@/composables/useAuth'
 
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? 'http://localhost:3000'
-
-const { user, loadUser, logout } = useAuth()
+const { loadUser } = useAuth()
 
 // 🕒 Clock
-const today = new Date()
-const pad = (n: number) => (n < 10 ? '0' + n : String(n))
-const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
 const time = ref('')
+const pad = (n: number) => (n < 10 ? '0' + n : String(n))
+const today = new Date()
+const displayDate = `${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
 let clockInterval: number | null = null
-
 const updateClock = () => {
   const now = new Date()
-  time.value = now.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
+  time.value = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-// 📋 Data & State
+// 📋 Types
 type AttendanceRow = {
   id: string
-  userId: string
   name: string
   department: string
   date: string
-  timeIn: string
-  timeOut: string
-  statusIn: string
-  statusOut: string
+  time: string
+  type: string
+  status: string
+  reason?: string | null
 }
 
 const checkins = ref<AttendanceRow[]>([])
 const checkouts = ref<AttendanceRow[]>([])
-const showModal = ref(false)
-
-const editingRecord = reactive({
-  id: null as string | number | null,
-  name: '',
-  department: '',
-  date: '',
-  timeIn: '',
-  timeOut: '',
-  statusIn: '',
-  statusOut: ''
-})
-
 const pollIntervalMs = 5000
 let pollInterval: number | null = null
 
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
 
-// 🧭 Fetch Attendance Data
+// 🧭 Fetch Attendance
 const fetchAttendances = async () => {
   try {
     const token = getToken()
@@ -69,87 +49,58 @@ const fetchAttendances = async () => {
     })
 
     if (!res.ok) {
-      console.warn('fetchAttendances failed', res.status)
+      console.warn('fetchAttendances failed:', res.status)
       return
     }
 
-    const data = await res.json().catch(() => [])
-    const normalStart = 8
-    const normalEnd = 17
+    const data = await res.json()
 
-    const parsed = (data || []).map((a: any) => {
-      const name = a.user?.name ?? a.user?.username ?? 'Unknown'
-      const department = a.departmentName ?? a.user?.departmentName ?? '-'
-      const timeInDate = a.timeIn ? new Date(a.timeIn) : null
-      const timeOutDate = a.timeOut ? new Date(a.timeOut) : null
-      const dateObj = a.date ? new Date(a.date) : new Date()
+    const parsed: AttendanceRow[] = data.map((a: any) => {
+      const userName = a.user?.name ?? a.user?.username ?? 'Unknown'
+      const department = a.departmentName ?? a.department?.name ?? '-'
+      const dateObj = new Date(a.date)
+      const timeObj = a.time ? new Date(a.time) : null
+
       const date = `${pad(dateObj.getDate())}-${pad(dateObj.getMonth() + 1)}-${dateObj.getFullYear()}`
-
-      // ✅ Status terpisah
-      let statusIn = '-'
-      let statusOut = '-'
-
-      if (timeInDate) {
-        const jamMasuk = timeInDate.getHours() + timeInDate.getMinutes() / 60
-        statusIn = jamMasuk > normalStart ? 'LATE' : 'PRESENT'
-      }
-      if (timeOutDate) {
-        const jamKeluar = timeOutDate.getHours() + timeOutDate.getMinutes() / 60
-        statusOut = jamKeluar >= normalEnd ? 'COMPLETED' : 'EARLY'
-      }
+      const time = timeObj
+        ? timeObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '-'
 
       return {
         id: a.id,
-        userId: a.userId,
-        name,
+        name: userName,
         department,
         date,
-        timeIn: timeInDate
-          ? timeInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : '-',
-        timeOut: timeOutDate
-          ? timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : '-',
-        statusIn,
-        statusOut
+        time,
+        type: a.type,
+        status: a.status,
+        reason: a.reason ?? null
       }
     })
 
-    checkins.value = parsed.filter(a => a.timeIn !== '-')
-    checkouts.value = parsed.filter(a => a.timeOut !== '-')
+    checkins.value = parsed.filter(a => a.type === 'IN')
+    checkouts.value = parsed.filter(a => a.type === 'OUT')
   } catch (err) {
     console.error('fetchAttendances error:', err)
   }
 }
 
-// ✍ Modal Edit
-const openEdit = (rec: AttendanceRow) => {
-  Object.assign(editingRecord, rec)
-  showModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  setTimeout(() => {
-    Object.assign(editingRecord, {
-      id: null,
-      name: '',
-      department: '',
-      date: '',
-      timeIn: '',
-      timeOut: '',
-      statusIn: '',
-      statusOut: ''
-    })
-  }, 150)
-}
-
-const saveEdit = () => {
-  const idxIn = checkins.value.findIndex(r => r.id === editingRecord.id)
-  const idxOut = checkouts.value.findIndex(r => r.id === editingRecord.id)
-  if (idxIn !== -1) checkins.value[idxIn] = { ...checkins.value[idxIn], ...editingRecord }
-  if (idxOut !== -1) checkouts.value[idxOut] = { ...checkouts.value[idxOut], ...editingRecord }
-  closeModal()
+// 🎨 Warna status
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'PRESENT':
+      return 'text-blue-700 bg-blue-100'
+    case 'LATE':
+      return 'text-orange-700 bg-orange-100'
+    case 'COMPLETED':
+      return 'text-green-700 bg-green-100'
+    case 'EARLY_OUT':
+      return 'text-yellow-700 bg-yellow-100'
+    case 'OVERTIME':
+      return 'text-purple-700 bg-purple-100'
+    default:
+      return 'text-gray-700 bg-gray-100'
+  }
 }
 
 // 🧭 Lifecycle
@@ -165,32 +116,12 @@ onBeforeUnmount(() => {
   if (clockInterval) clearInterval(clockInterval)
   if (pollInterval) clearInterval(pollInterval)
 })
-
-// 🎨 Status color
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'PRESENT':
-      return 'text-blue-700 bg-blue-100'
-    case 'COMPLETED':
-      return 'text-green-700 bg-green-100'
-    case 'LATE':
-      return 'text-orange-700 bg-orange-100'
-    case 'EARLY':
-      return 'text-yellow-700 bg-yellow-100'
-    case 'ABSENT':
-      return 'text-red-700 bg-red-100'
-    default:
-      return 'text-gray-700 bg-gray-100'
-  }
-}
 </script>
 
 <template>
   <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside
-      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
-    >
+    <aside class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
       <div class="flex items-center justify-center h-20 mb-8">
         <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
@@ -198,14 +129,8 @@ const getStatusColor = (status: string) => {
       <nav class="flex flex-col space-y-3 text-white font-medium">
         <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
         <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
-        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition"
-          >➕ Add Account</a
-        >
-        <a
-          href="/admin/attendance"
-          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
-          >📝 Attendance</a
-        >
+        <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+        <a href="/admin/attendance" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">📝 Attendance</a>
         <a href="/admin/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
       </nav>
     </aside>
@@ -215,7 +140,7 @@ const getStatusColor = (status: string) => {
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-3xl font-bold text-white drop-shadow-md">ATTENDANCE</h1>
-          <div class="text-sm text-gray-100 mt-1">{{ displayDate }}</div>
+          <div class="text-sm text-gray-100 mt-1">{{ displayDate }} | {{ time }}</div>
         </div>
         <button
           @click="fetchAttendances"
@@ -225,37 +150,28 @@ const getStatusColor = (status: string) => {
         </button>
       </div>
 
-      <!-- Check-In -->
+      <!-- ✅ Check-In Table -->
       <section class="mb-10">
         <h2 class="text-xl font-semibold mb-3 text-white">Check-In</h2>
-        <div
-          class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl overflow-x-auto border border-white/30"
-        >
+        <div class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl overflow-x-auto border border-white/30">
           <table class="min-w-full text-gray-800">
             <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
               <tr>
                 <th class="text-left px-6 py-3">Nama</th>
                 <th class="text-left px-6 py-3">Department</th>
                 <th class="text-left px-6 py-3">Tanggal</th>
-                <th class="text-left px-6 py-3">Jam Masuk</th>
+                <th class="text-left px-6 py-3">Jam</th>
                 <th class="text-left px-6 py-3">Status</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="rec in checkins"
-                :key="rec.id"
-                class="border-t border-white/40 hover:bg-white/30 transition duration-200"
-              >
+              <tr v-for="rec in checkins" :key="rec.id" class="border-t border-white/40 hover:bg-white/30 transition duration-200">
                 <td class="px-6 py-3">{{ rec.name }}</td>
                 <td class="px-6 py-3">{{ rec.department }}</td>
                 <td class="px-6 py-3">{{ rec.date }}</td>
-                <td class="px-6 py-3">{{ rec.timeIn }}</td>
+                <td class="px-6 py-3">{{ rec.time }}</td>
                 <td class="px-6 py-3">
-                  <span
-                    :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.statusIn)]"
-                    >{{ rec.statusIn }}</span
-                  >
+                  <span :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.status)]">{{ rec.status }}</span>
                 </td>
               </tr>
               <tr v-if="checkins.length === 0">
@@ -268,41 +184,37 @@ const getStatusColor = (status: string) => {
         </div>
       </section>
 
-      <!-- Check-Out -->
+      <!-- ✅ Check-Out Table -->
       <section>
         <h2 class="text-xl font-semibold mb-3 text-white">Check-Out</h2>
-        <div
-          class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl overflow-x-auto border border-white/30"
-        >
+        <div class="bg-white/20 backdrop-blur-md rounded-2xl shadow-xl overflow-x-auto border border-white/30">
           <table class="min-w-full text-gray-800">
             <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
               <tr>
                 <th class="text-left px-6 py-3">Nama</th>
                 <th class="text-left px-6 py-3">Department</th>
                 <th class="text-left px-6 py-3">Tanggal</th>
-                <th class="text-left px-6 py-3">Jam Keluar</th>
+                <th class="text-left px-6 py-3">Jam</th>
                 <th class="text-left px-6 py-3">Status</th>
+                <th class="text-left px-6 py-3">Reason</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="rec in checkouts"
-                :key="rec.id"
-                class="border-t border-white/40 hover:bg-white/30 transition duration-200"
-              >
+              <tr v-for="rec in checkouts" :key="rec.id" class="border-t border-white/40 hover:bg-white/30 transition duration-200">
                 <td class="px-6 py-3">{{ rec.name }}</td>
                 <td class="px-6 py-3">{{ rec.department }}</td>
                 <td class="px-6 py-3">{{ rec.date }}</td>
-                <td class="px-6 py-3">{{ rec.timeOut }}</td>
+                <td class="px-6 py-3">{{ rec.time }}</td>
                 <td class="px-6 py-3">
-                  <span
-                    :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.statusOut)]"
-                    >{{ rec.statusOut }}</span
-                  >
+                  <span :class="['px-2 py-1 rounded text-xs font-semibold', getStatusColor(rec.status)]">{{ rec.status }}</span>
+                </td>
+                <td class="px-6 py-3">
+                  <span v-if="rec.reason" class="text-gray-800 italic">{{ rec.reason }}</span>
+                  <span v-else class="text-gray-400">-</span>
                 </td>
               </tr>
               <tr v-if="checkouts.length === 0">
-                <td colspan="5" class="px-6 py-8 text-center text-gray-200 font-medium">
+                <td colspan="6" class="px-6 py-8 text-center text-gray-200 font-medium">
                   Belum ada data Check-Out.
                 </td>
               </tr>

@@ -20,14 +20,8 @@ const videoRef = ref<HTMLVideoElement | null>(null)
 let qrReader: any = null
 let clockInterval: number | null = null
 
-// 🧭 Mode otomatis (check-in / check-out)
-const mode = ref<"checkin" | "checkout">("checkin")
-const updateMode = () => {
-  mode.value = route.path.toLowerCase().includes("checkout") ? "checkout" : "checkin"
-  console.log("🧭 Mode aktif:", mode.value)
-}
-updateMode()
-watch(route, updateMode)
+// 🧭 Mode
+const mode = ref<"checkin" | "checkout">("checkout")
 
 // 🕒 Jam real-time
 const updateClock = () => {
@@ -44,7 +38,7 @@ const postAttendance = async (payload: Record<string, any>) => {
   message.value = null
   try {
     const token = getToken()
-    const res = await fetch(`${apiBase}/attendance/${mode.value}`, {
+    const res = await fetch(`${apiBase}/attendance/checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -55,14 +49,13 @@ const postAttendance = async (payload: Record<string, any>) => {
 
     const text = await res.text().catch(() => "")
     if (!res.ok) {
-      message.value = `❌ Gagal ${mode.value}: ${text || res.statusText}`
-      console.error(`❌ Gagal ${mode.value}:`, text)
+      message.value = `❌ Gagal checkout: ${text || res.statusText}`
+      console.error(`❌ Gagal checkout:`, text)
       return false
     }
 
     const json = text ? JSON.parse(text) : {}
-    message.value =
-      json?.message ?? `✅ ${mode.value === "checkin" ? "Check-in" : "Check-out"} berhasil`
+    message.value = json?.message ?? "✅ Checkout berhasil"
     return true
   } catch (err: any) {
     message.value = `⚠️ Error koneksi: ${err?.message || err}`
@@ -71,38 +64,52 @@ const postAttendance = async (payload: Record<string, any>) => {
   }
 }
 
-// 🔍 Proses hasil QR
+// 🧾 Modal alasan keluar awal
+const showReasonModal = ref(false)
+const reason = ref("")
+
+const submitReason = async () => {
+  if (!reason.value.trim()) {
+    message.value = "⚠️ Isi alasan dulu sebelum checkout!"
+    return
+  }
+  showReasonModal.value = false
+  await postAttendance({
+    userId: String(user.value?.id),
+    qrValue: String(lastQr.value),
+    reason: reason.value,
+  })
+}
+
+// 🔍 QR Handling
 let debounceLock = false
+const lastQr = ref<string | null>(null)
+
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return
   debounceLock = true
 
   await loadUser()
-
-  if (!user.value?.id || !user.value?.role) {
-    message.value = "⚠️ Data user belum siap. Tunggu beberapa detik..."
+  if (!user.value?.id) {
+    message.value = "⚠️ Data user belum siap"
     debounceLock = false
     return
   }
 
-  console.log(`🔍 Barcode hasil scan (${mode.value}):`, raw)
+  const now = new Date()
+  lastQr.value = raw
 
-  // 🚫 Batas jam check-out = 17:00 (jam 5 sore)
-  if (mode.value === "checkout") {
-    const now = new Date()
-    if (now.getHours() < 17) {
-      message.value = "⚠️ Check-out hanya dapat dilakukan setelah pukul 17:00"
-      debounceLock = false
-      return
-    }
+  // 💡 Kalau checkout sebelum jam 17:00 → minta alasan
+  if (now.getHours() < 17) {
+    showReasonModal.value = true
+    debounceLock = false
+    return
   }
 
-  const payload =
-    mode.value === "checkin"
-      ? { userId: String(user.value.id), role: String(user.value.role), qrValue: String(raw) }
-      : { userId: String(user.value.id), qrValue: String(raw) }
-
-  await postAttendance(payload)
+  await postAttendance({
+    userId: String(user.value.id),
+    qrValue: String(raw),
+  })
 
   setTimeout(() => (debounceLock = false), 2000)
 }
@@ -133,7 +140,6 @@ const startScanner = async () => {
   }
 }
 
-// 🛑 Stop scanner
 const stopScanner = () => {
   try {
     qrReader?.reset?.()
@@ -171,31 +177,17 @@ onBeforeUnmount(() => {
       </nav>
     </aside>
 
-    <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
       <div class="w-full max-w-2xl">
-        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h1 class="text-2xl font-bold">
-              {{ mode === "checkin" ? "Check-in Department" : "Check-out Department" }}
-            </h1>
-            <p class="text-sm text-gray-500">
-              {{
-                mode === "checkin"
-                  ? "Arahkan kamera ke QR Code untuk Check-in"
-                  : "Arahkan kamera ke QR Code untuk Check-out"
-              }}
-            </p>
-            <p class="text-xs text-gray-400 mt-1">
-              Department Anda: {{ user?.department?.name || "Belum ada" }}
-            </p>
+            <h1 class="text-2xl font-bold">Check-out Department</h1>
+            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code untuk Check-out</p>
+            <p class="text-xs text-gray-400 mt-1">Department Anda: {{ user?.department?.name || "Belum ada" }}</p>
           </div>
           <div class="text-right">
             <div class="text-3xl font-bold">{{ time }}</div>
-            <div class="text-xs text-gray-500 mt-1">
-              {{ user?.username ?? "User" }}
-            </div>
+            <div class="text-xs text-gray-500 mt-1">{{ user?.username ?? "User" }}</div>
           </div>
         </div>
 
@@ -206,22 +198,12 @@ onBeforeUnmount(() => {
               <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover" />
             </client-only>
 
-            <div
-              class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
-            >
+            <div class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm">
               <span>{{ scanning ? "🔍 Scanning..." : "⏸ Paused" }}</span>
-              <button
-                v-if="scanning"
-                @click="stopScanner"
-                class="px-3 py-1 bg-red-500 rounded text-xs"
-              >
+              <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">
                 Stop
               </button>
-              <button
-                v-else
-                @click="startScanner"
-                class="px-3 py-1 bg-green-500 rounded text-xs"
-              >
+              <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">
                 Start
               </button>
             </div>
@@ -241,13 +223,26 @@ onBeforeUnmount(() => {
             >
               {{ message }}
             </p>
-            <p v-else class="text-sm text-gray-500">
-              {{
-                mode === "checkin"
-                  ? "📱 Siap melakukan Check-in"
-                  : "📱 Siap melakukan Check-out"
-              }}
-            </p>
+            <p v-else class="text-sm text-gray-500">📱 Siap melakukan Check-out</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🧾 Modal Alasan -->
+      <div
+        v-if="showReasonModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-96">
+          <h2 class="text-lg font-bold mb-3">Alasan Keluar Sebelum Jam 17:00</h2>
+          <textarea
+            v-model="reason"
+            rows="3"
+            placeholder="Tulis alasan di sini..."
+            class="w-full p-2 border rounded text-sm"
+          ></textarea>
+          <div class="flex justify-end mt-4 gap-2">
+            <button @click="showReasonModal = false" class="px-3 py-1 bg-gray-300 rounded">Batal</button>
+            <button @click="submitReason" class="px-3 py-1 bg-blue-500 text-white rounded">Kirim</button>
           </div>
         </div>
       </div>

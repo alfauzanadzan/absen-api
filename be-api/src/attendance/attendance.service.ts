@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AttendanceStatus, UserRole } from '@prisma/client';
+import { AttendanceStatus, AttendanceType, UserRole } from '@prisma/client';
 
 @Injectable()
 export class AttendanceService {
@@ -14,59 +14,58 @@ export class AttendanceService {
     if (!role) throw new BadRequestException('Role tidak valid');
     if (!qrValue) throw new BadRequestException('QR code tidak boleh kosong');
 
-    // Ambil user
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User tidak ditemukan');
 
-    // Ambil barcode
     const barcode = await this.prisma.barcode.findUnique({ where: { value: qrValue } });
     if (!barcode) throw new BadRequestException('QR code tidak valid');
 
-    // Pastikan department cocok
     if (user.departmentId !== barcode.departmentId) {
       throw new BadRequestException('❌ QR code tidak sesuai dengan department kamu');
     }
 
-    // Buat tanggal hari ini (tanpa jam)
     const now = new Date();
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Cek apakah sudah ada attendance hari ini
-    const todayAttendance = await this.prisma.attendance.findFirst({
+    const existing = await this.prisma.attendance.findUnique({
       where: {
-        userId,
-        date: { gte: startOfDay, lte: endOfDay },
+        userId_date_type: {
+          userId,
+          date,
+          type: AttendanceType.IN,
+        },
       },
     });
-
-    if (todayAttendance) {
+    if (existing) {
       throw new BadRequestException('❌ Kamu sudah melakukan check-in hari ini');
     }
 
-    // Status: LATE kalau lewat jam 8 pagi
     const status = now.getHours() >= 8 ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
 
-    // Simpan attendance
-    return this.prisma.attendance.create({
+    const checkin = await this.prisma.attendance.create({
       data: {
         userId,
         departmentId: user.departmentId,
         departmentName: user.departmentName,
         qrValue,
-        date: now,
-        timeIn: now,
+        date,
+        time: now,
         role,
+        type: AttendanceType.IN,
         status,
       },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        department: { select: { id: true, name: true } },
+      },
     });
+
+    return { message: '✅ Check-in berhasil!', data: checkin };
   }
 
   // ✅ CHECK-OUT
-  async checkout(dto: { userId: string; qrValue: string }) {
-    const { userId, qrValue } = dto;
+  async checkout(dto: { userId: string; qrValue: string; reason?: string }) {
+    const { userId, qrValue, reason } = dto;
 
     if (!userId) throw new BadRequestException('User ID tidak valid');
     if (!qrValue) throw new BadRequestException('QR code tidak boleh kosong');
@@ -82,46 +81,132 @@ export class AttendanceService {
     }
 
     const now = new Date();
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // 🔎 Cari attendance hari ini yang belum checkout
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const existingAttendance = await this.prisma.attendance.findFirst({
+    const checkin = await this.prisma.attendance.findUnique({
       where: {
-        userId,
-        date: { gte: startOfDay, lte: endOfDay },
-        timeOut: null,
+        userId_date_type: {
+          userId,
+          date,
+          type: AttendanceType.IN,
+        },
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    if (!existingAttendance) {
-      throw new NotFoundException('❌ Belum melakukan check-in hari ini atau sudah checkout');
+    if (!checkin) {
+      throw new NotFoundException('❌ Kamu belum melakukan check-in hari ini');
     }
 
-    // Update attendance
-    const updated = await this.prisma.attendance.update({
-      where: { id: existingAttendance.id },
-      data: {
-        timeOut: now,
-        status: AttendanceStatus.COMPLETED,
+    const existingOut = await this.prisma.attendance.findUnique({
+      where: {
+        userId_date_type: {
+          userId,
+          date,
+          type: AttendanceType.OUT,
+        },
       },
     });
 
-    return { message: '✅ Checkout berhasil!', data: updated };
+    if (existingOut) {
+      throw new BadRequestException('❌ Kamu sudah checkout hari ini');
+    }
+
+    const endTime = new Date(date);
+    endTime.setHours(17, 0, 0, 0);
+
+    let status: AttendanceStatus = AttendanceStatus.COMPLETED;
+    let checkoutReason: string | null = reason || null;
+
+    if (now < endTime) {
+      status = AttendanceStatus.EARLY_OUT;
+      if (!reason) {
+        throw new BadRequestException('⚠️ Checkout sebelum jam 17:00 memerlukan alasan.');
+      }
+    } else if (now > endTime) {
+      status = AttendanceStatus.OVERTIME;
+    }
+
+    const checkout = await this.prisma.attendance.create({
+      data: {
+        userId,
+        departmentId: user.departmentId,
+        departmentName: user.departmentName,
+        qrValue,
+        date,
+        time: now,
+        role: user.role,
+        type: AttendanceType.OUT,
+        status,
+        reason: checkoutReason,
+      },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        department: { select: { id: true, name: true } },
+      },
+    });
+
+    return { message: '✅ Checkout berhasil!', data: checkout };
   }
 
   // ✅ GET ALL ATTENDANCE
   async findAll() {
-    return this.prisma.attendance.findMany({
+    const records = await this.prisma.attendance.findMany({
       include: {
         user: { select: { id: true, username: true, name: true, role: true } },
         department: { select: { id: true, name: true, code: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return records.map((r) => ({
+      id: r.id,
+      date: r.date,
+      time: r.time,
+      qrValue: r.qrValue,
+      role: r.role,
+      status: r.status,
+      type: r.type,
+      reason: r.reason,
+      user: r.user,
+      department: r.department,
+    }));
+  }
+
+  // ✅ REPORT (daily, weekly, monthly)
+  async getReport(type: 'daily' | 'weekly' | 'monthly') {
+    const now = new Date();
+    let startDate = new Date(now);
+
+    if (type === 'weekly') {
+      const day = now.getDay(); // Minggu=0
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - day);
+    } else if (type === 'monthly') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: { date: { gte: startDate } },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        department: { select: { id: true, name: true } },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    const grouped: Record<string, any[]> = {};
+    for (const att of attendances) {
+      const dept = att.department?.name || 'Unknown';
+      if (!grouped[dept]) grouped[dept] = [];
+      grouped[dept].push(att);
+    }
+
+    return Object.entries(grouped).map(([department, list]) => ({
+      department,
+      count: list.length,
+      items: list,
+    }));
   }
 }

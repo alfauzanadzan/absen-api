@@ -128,97 +128,128 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white p-6">
-    <div class="w-full max-w-md mx-auto">
-      <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border p-6 md:p-8">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-100 relative overflow-hidden">
 
-        <!-- HEADER -->
-        <div class="flex flex-col items-center mb-4 gap-2">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-lg flex items-center justify-center shadow-md">
-            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3-2 5-4 5s-4-2-4-5 2-5 4-5 4 2 4 5z M20 11c0 3-2 5-4 5s-4-2-4-5 2-5 4-5 4 2 4 5z" />
-            </svg>
+    <!-- BACKGROUND EFFECT -->
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute -top-20 -left-20 w-96 h-96 bg-indigo-300/40 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-0 right-0 w-[30rem] h-[30rem] bg-blue-400/30 rounded-full blur-3xl animate-[pulse_10s_ease-in-out_infinite]"></div>
+    </div>
+
+    <!-- LOGIN CARD -->
+    <div class="relative w-full max-w-md backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-3xl p-8 md:p-10 animate-fadeIn">
+
+      <!-- HEADER -->
+      <div class="flex flex-col items-center mb-6 text-center">
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-4 rounded-2xl shadow-lg">
+          <svg class="w-10 h-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M12 11c0 3-2 5-4 5s-4-2-4-5 2-5 4-5 4 2 4 5z M20 11c0 3-2 5-4 5s-4-2-4-5 2-5 4-5 4 2 4 5z" />
+          </svg>
+        </div>
+        <h1 class="mt-4 text-3xl font-bold text-slate-800">Selamat Datang 👋</h1>
+        <p class="text-slate-500 text-sm">Masuk menggunakan akunmu untuk melanjutkan</p>
+      </div>
+
+      <!-- PREVIEW INFO -->
+      <transition name="fade">
+        <div v-if="previewInfo && username.trim()" class="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl text-xs border border-blue-100 shadow-inner">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-blue-800 font-semibold mb-1">
+                Role:
+                <span :class="['px-2 py-1 rounded-full text-xs font-medium ml-1', previewInfo.roleColor]">{{ previewInfo.role }}</span>
+              </p>
+              <p class="text-blue-700 font-medium">
+                Department:
+                <span v-if="previewInfo.department">{{ previewInfo.department }}</span>
+                <span v-else class="italic text-slate-500">—</span>
+              </p>
+            </div>
+            <div class="text-right text-slate-700">
+              <p class="font-semibold text-xs">Redirect:</p>
+              <code class="bg-slate-100 border border-slate-200 rounded px-2 py-1 font-mono text-[11px]">{{ previewInfo.redirectPath }}</code>
+            </div>
           </div>
-          <h1 class="text-2xl font-bold">Masuk</h1>
-          <p class="text-sm text-slate-500 text-center">Masuk menggunakan akunmu untuk melanjutkan.</p>
+        </div>
+      </transition>
+
+      <!-- LOGIN FORM -->
+      <form @submit.prevent="handleLogin" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+          <input v-model="username" type="text" :disabled="loading"
+            class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+            placeholder="Contoh: superadmin" />
         </div>
 
-        <!-- PREVIEW ROLE & REDIRECT -->
-        <div v-if="previewInfo && username.trim()" class="mb-4 p-3 bg-blue-50 rounded-lg text-xs w-full border border-blue-200">
-          <div class="flex justify-between items-start gap-4">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-blue-700">Role:</span>
-                <span :class="['px-2 py-1 rounded-full text-xs font-medium', previewInfo.roleColor]">{{ previewInfo.role }}</span>
-              </div>
-              <p v-if="previewInfo.department" class="text-blue-700"><span class="font-semibold">Department:</span> <span class="ml-1 font-medium">{{ previewInfo.department }}</span></p>
-              <p v-else class="text-blue-700 text-xs italic">Tidak membutuhkan department</p>
-            </div>
-            <div class="text-right">
-              <p class="text-blue-700 font-semibold text-xs mb-1">Redirect ke:</p>
-              <code class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono border border-blue-200">{{ previewInfo.redirectPath }}</code>
-            </div>
-          </div>
-        </div>
-
-        <!-- FORM LOGIN -->
-        <form @submit.prevent="handleLogin" class="space-y-4" novalidate>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
-            <input v-model="username" type="text" :disabled="loading" autocomplete="username"
-              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: superadmin" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <div class="relative">
-              <input v-model="password" :type="showPassword ? 'text' : 'password'" :disabled="loading" autocomplete="current-password"
-                class="block w-full rounded-md border border-gray-300 px-3 py-2.5 pr-24 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password" />
-              <button type="button" @click="showPassword = !showPassword"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-slate-600 hover:text-slate-800">{{ showPassword ? 'Sembunyikan' : 'Tampilkan' }}</button>
-            </div>
-
-            <!-- PASSWORD STRENGTH -->
-            <div class="mt-2">
-              <div class="w-full h-2 bg-slate-100 rounded overflow-hidden">
-                <div class="h-2 rounded transition-all duration-300" :style="{ width: passwordStrength.val + '%', background: passwordScore >= 3 ? 'linear-gradient(90deg,#34d399,#06b6d4)' : 'linear-gradient(90deg,#f97316,#f43f5e)'}"></div>
-              </div>
-              <div class="mt-1 text-xs text-slate-500 flex justify-between">
-                <span>{{ passwordStrength.label }}</span>
-                <span v-if="password.length > 0" class="font-mono">{{ password.length }} karakter</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" v-model="remember" :disabled="loading" class="w-4 h-4 rounded border-gray-300 text-blue-600" />
-              Ingat username saya
-            </label>
-          </div>
-
-          <div>
-            <button type="submit" :disabled="!canSubmit"
-              class="w-full rounded-lg px-4 py-3 text-white font-semibold transition-all duration-200 disabled:opacity-60 shadow-sm hover:shadow-md active:scale-95"
-              :class="loading ? 'bg-slate-600 cursor-wait' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'">
-              <span>{{ loading ? 'Memproses...' : 'Masuk ke Sistem' }}</span>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+          <div class="relative">
+            <input v-model="password" :type="showPassword ? 'text' : 'password'" :disabled="loading"
+              class="w-full rounded-xl border border-gray-300 px-4 py-2.5 pr-24 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+              placeholder="Masukkan password" />
+            <button type="button" @click="showPassword = !showPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-blue-600 hover:text-blue-800">
+              {{ showPassword ? 'Sembunyikan' : 'Tampilkan' }}
             </button>
           </div>
 
-          <div v-if="error" class="mt-2 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{{ error }}</div>
-        </form>
-
-        <!-- FOOTER -->
-        <div class="mt-6 text-center text-xs text-slate-400">
-          © {{ new Date().getFullYear() }} Nama Aplikasi • v1.0
+          <!-- STRENGTH BAR -->
+          <div class="mt-2">
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-2 rounded-full transition-all duration-500"
+                :style="{ width: passwordStrength.val + '%', background: passwordScore >= 3 ? 'linear-gradient(90deg,#34d399,#06b6d4)' : 'linear-gradient(90deg,#f97316,#f43f5e)' }"></div>
+            </div>
+            <div class="mt-1 flex justify-between text-[11px] text-slate-500">
+              <span>{{ passwordStrength.label }}</span>
+              <span v-if="password.length" class="font-mono">{{ password.length }} karakter</span>
+            </div>
+          </div>
         </div>
 
+        <!-- REMEMBER -->
+        <div class="flex items-center justify-between text-sm">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+            <input type="checkbox" v-model="remember" :disabled="loading" class="w-4 h-4 text-blue-600 rounded border-gray-300" />
+            Ingat username
+          </label>
+          <a href="#" class="text-blue-600 hover:underline">Lupa password?</a>
+        </div>
+
+        <!-- SUBMIT -->
+        <button type="submit" :disabled="!canSubmit"
+          class="w-full py-3 rounded-xl text-white font-semibold transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-60"
+          :class="loading ? 'bg-slate-500 cursor-wait' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'">
+          {{ loading ? 'Memproses...' : 'Masuk Sekarang' }}
+        </button>
+
+        <transition name="fade">
+          <div v-if="error" class="mt-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm shadow-inner">
+            {{ error }}
+          </div>
+        </transition>
+      </form>
+
+      <!-- FOOTER -->
+      <div class="mt-6 text-center text-xs text-slate-400">
+        © {{ new Date().getFullYear() }} Nama Aplikasi • <span class="font-medium text-blue-500">v1.0</span>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-input, button { transition: all 0.2s ease-in-out; }
-input:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(15px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn { animation: fadeIn 0.6s ease-out; }
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 </style>

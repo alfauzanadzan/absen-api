@@ -1,27 +1,33 @@
-import { Controller, Post, Get, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
-import { CheckinDto } from './dto/checkin.dto';
-import { CheckoutDto } from './dto/checkout.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserRole } from '@prisma/client';
 
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  // ✅ Check-In endpoint
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getAll() {
+    return this.attendanceService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('report')
+  async getReport(@Query('type') type: 'daily' | 'weekly' | 'monthly' = 'daily') {
+    return this.attendanceService.getReport(type);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('checkin')
-  async checkin(@Body() dto: CheckinDto) {
+  async checkin(@Body() dto: { userId: string; role: UserRole; qrValue: string }) {
     return this.attendanceService.checkin(dto);
   }
 
-  // ✅ Check-Out endpoint
+  @UseGuards(JwtAuthGuard)
   @Post('checkout')
-  async checkout(@Body() dto: CheckoutDto) {
+  async checkout(@Body() dto: { userId: string; qrValue: string; reason?: string }) {
     return this.attendanceService.checkout(dto);
-  }
-
-  // ✅ Get all attendance data
-  @Get()
-  async findAll() {
-    return this.attendanceService.findAll();
   }
 }

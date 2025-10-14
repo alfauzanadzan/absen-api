@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Attendance" ADD COLUMN     "reason" TEXT,
+ALTER COLUMN "role" DROP DEFAULT,
+ALTER COLUMN "status" DROP DEFAULT;

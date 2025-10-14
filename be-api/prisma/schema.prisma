@@ -7,13 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//
-// ENUMS
-//
 enum AttendanceStatus {
   PRESENT
   LATE
+  EARLY_OUT
+  OVERTIME
   COMPLETED
+}
+
+enum AttendanceType {
+  IN
+  OUT
 }
 
 enum UserRole {
@@ -23,9 +27,6 @@ enum UserRole {
   PEKERJA
 }
 
-//
-// MODELS
-//
 model User {
   id              String       @id @default(uuid())
   username        String       @unique
@@ -33,53 +34,46 @@ model User {
   password        String
   name            String?
   avatar          String?
-
   role            UserRole     @default(PEKERJA)
-  position        String?      
-  departmentId    String?      
-  departmentName  String?      // ✅ field baru
-
+  position        String?
+  departmentId    String?
+  departmentName  String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  attendances   Attendance[]
-  department    Department?  @relation(fields: [departmentId], references: [id])
+  attendances     Attendance[]
+  department      Department?  @relation(fields: [departmentId], references: [id])
 }
 
 model Attendance {
-  id             String           @id @default(uuid())
-  userId         String
-  departmentId   String?
-  departmentName String?
-  date           DateTime         @default(now())   // tanggal absen
-  timeIn         DateTime?
-  timeOut        DateTime?
-  qrValue        String           // ❌ hapus @unique
-  role           UserRole         @default(PEKERJA)
-  status         AttendanceStatus @default(PRESENT)
+  id              String           @id @default(uuid())
+  userId          String
+  date            DateTime
+  time            DateTime
+  qrValue         String
+  departmentId    String?
+  departmentName  String?
+  type            AttendanceType
+  role            UserRole
+  status          AttendanceStatus
+  reason          String?           // 🆕 alasan keluar awal
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  user            User?             @relation(fields: [userId], references: [id])
+  department      Department?       @relation(fields: [departmentId], references: [id])
 
-  // RELATIONS
-  user           User             @relation(fields: [userId], references: [id])
-  department     Department?      @relation(fields: [departmentId], references: [id])
-
-  // ✅ tiap user cuma bisa punya 1 attendance record per hari
-  @@unique([userId, date])
+  @@unique([userId, date, type])
 }
-
 
 
 model Department {
   id          String       @id @default(uuid())
   name        String       @unique
   code        String       @unique
-
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  // RELATIONS
   users       User[]
   barcodes    Barcode[]
   attendances Attendance[]
@@ -88,7 +82,7 @@ model Department {
 model Barcode {
   id             String      @id @default(uuid())
   value          String      @unique
-  departmentId   String      // 🔧 hapus @unique di sini
+  departmentId   String
   departmentName String?
   latitude       Float
   longitude      Float
