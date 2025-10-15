@@ -46,8 +46,8 @@
 
           <tbody>
             <tr
-              class="border-t border-white/40 hover:bg-white/30 transition duration-200"
               v-if="employees.length > 0"
+              class="border-t border-white/40 hover:bg-white/30 transition duration-200"
             >
               <td class="px-6 py-4">Marketing</td>
               <td class="px-6 py-4 text-center">{{ totalEmployees }}</td>
@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
+import { ref, onMounted, watch } from "vue"
 import { useRuntimeConfig } from "#imports"
 
 const config = useRuntimeConfig()
@@ -128,13 +128,28 @@ const reportType = ref("daily")
 const totalEmployees = ref(0)
 const employees = ref<any[]>([])
 const showModal = ref(false)
+const displayDate = ref("")
 
-// === Display date ===
-const today = new Date()
-const pad = (n: number) => (n < 10 ? "0" + n : n)
-const displayDate = `Today ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
+// === Generate tanggal sesuai report type ===
+function updateDisplayDate() {
+  const today = new Date()
+  const pad = (n: number) => (n < 10 ? "0" + n : n)
 
-// === Fetch Marketing Employees ===
+  if (reportType.value === "daily") {
+    displayDate.value = `Tanggal ${pad(today.getDate())}-${pad(today.getMonth() + 1)}-${today.getFullYear()}`
+  } else if (reportType.value === "weekly") {
+    const start = new Date(today)
+    start.setDate(today.getDate() - today.getDay() + 1)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    displayDate.value = `Minggu ${pad(start.getDate())}-${pad(start.getMonth() + 1)} s/d ${pad(end.getDate())}-${pad(end.getMonth() + 1)}`
+  } else if (reportType.value === "monthly") {
+    const month = today.toLocaleString("default", { month: "long" })
+    displayDate.value = `Bulan ${month} ${today.getFullYear()}`
+  }
+}
+
+// === Fetch Data Karyawan Marketing ===
 const fetchEmployees = async () => {
   try {
     const res = await fetch(`${apiBase}/users`)
@@ -159,7 +174,11 @@ function viewDetails() {
   showModal.value = true
 }
 
-onMounted(fetchEmployees)
+onMounted(() => {
+  updateDisplayDate()
+  fetchEmployees()
+})
+watch(reportType, updateDisplayDate)
 </script>
 
 <style scoped>

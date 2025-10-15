@@ -1,35 +1,33 @@
 <template>
-  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
-    <aside
-      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+  <div class="flex h-screen bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/40">
       <div class="flex items-center justify-center h-20 mb-8">
-        <h1
-          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide text-center"
-        >
+        <h1 class="text-xl font-extrabold text-gray-800 tracking-wide text-center">
           KAPROG MARKETING
         </h1>
       </div>
 
-      <nav class="flex flex-col space-y-3 text-white font-medium">
-        <a href="/kaprog-marketing/kaprogmarketing" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
-        <a href="/kaprog-marketing/profilkaprog" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
-        <a href="/kaprog-marketing/attendance" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">📝 Attendance</a>
-        <a href="/kaprog-marketing/reports" class="p-3 rounded-lg hover:bg-white/20 transition">📊 Reports</a>
+      <nav class="flex flex-col space-y-3 text-gray-800 font-medium">
+        <a href="/kaprog-marketing/kaprogmarketing" class="p-3 rounded-lg hover:bg-white/40 transition">🏠 Dashboard</a>
+        <a href="/kaprog-marketing/profilkaprog" class="p-3 rounded-lg hover:bg-white/40 transition">👤 Profile</a>
+        <a href="/kaprog-marketing/attendance" class="p-3 rounded-lg bg-white/50 shadow font-semibold text-gray-900">📝 Attendance</a>
+        <a href="/kaprog-marketing/reports" class="p-3 rounded-lg hover:bg-white/40 transition">📊 Reports</a>
       </nav>
-    </aside>
+    </aside>
 
     <!-- Main -->
-    <main class="flex-1 p-8 overflow-y-auto">
+    <main class="flex-1 p-8 overflow-y-auto text-gray-900">
       <!-- Header -->
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold">ATTENDANCE</h1>
-          <div class="text-sm text-gray-500 mt-1">{{ displayDate }}</div>
+          <div class="text-sm text-gray-600 mt-1">{{ displayDate }}</div>
         </div>
 
         <button
           @click="markAllPresent"
-          class="bg-blue-500 text-white px-4 py-2 rounded font-semibold hover:bg-blue-600 transition"
+          class="bg-gray-700 text-white px-4 py-2 rounded font-semibold hover:bg-gray-800 transition"
         >
           Mark Attendance
         </button>
@@ -37,10 +35,10 @@
 
       <!-- Table -->
       <div
-        class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+        class="mt-6 bg-white/50 backdrop-blur-md rounded-2xl shadow-lg overflow-x-auto border border-white/40"
       >
         <table class="min-w-full text-gray-800">
-          <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
+          <thead class="bg-gray-200/70 font-semibold uppercase text-sm">
             <tr>
               <th class="text-left px-6 py-3 font-semibold">Nama</th>
               <th class="text-left px-6 py-3 font-semibold">Position</th>
@@ -56,19 +54,20 @@
             <tr
               v-for="rec in attendances"
               :key="rec.id"
-              class="border-t border-white/40 hover:bg-white/30 transition duration-200"
+              class="border-t border-gray-300 hover:bg-gray-100 transition duration-200"
             >
               <td class="px-6 py-4">{{ rec.user?.name || '-' }}</td>
               <td class="px-6 py-4">{{ rec.user?.role || '-' }}</td>
-              <td class="px-6 py-4">{{ rec.departmentName || '-' }}</td>
+              <td class="px-6 py-4">{{ rec.department?.name || '-' }}</td>
               <td class="px-6 py-4">{{ formatDate(rec.date) }}</td>
-              <td class="px-6 py-4">{{ formatTime(rec.timeIn) }}</td>
+              <td class="px-6 py-4">{{ formatTime(rec.time) }}</td>
               <td class="px-6 py-4">
                 <span
                   :class="{
                     'text-green-600 font-semibold': rec.status === 'PRESENT',
                     'text-yellow-600 font-semibold': rec.status === 'LATE',
-                    'text-gray-500 font-semibold': rec.status === 'COMPLETED'
+                    'text-blue-600 font-semibold': rec.status === 'COMPLETED',
+                    'text-red-600 font-semibold': rec.status === 'EARLY_OUT'
                   }"
                 >
                   {{ rec.status || '-' }}
@@ -76,7 +75,7 @@
               </td>
               <td class="px-6 py-4 text-center">
                 <button
-                  class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  class="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-800"
                   @click="openEdit(rec)"
                 >
                   Edit
@@ -84,7 +83,7 @@
               </td>
             </tr>
 
-            <!-- Kalau belum ada data -->
+            <!-- Jika belum ada data -->
             <tr v-if="attendances.length === 0">
               <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                 Belum ada data kehadiran pekerja MARKETING.
@@ -100,7 +99,7 @@
       v-if="showModal"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     >
-      <div class="bg-white rounded-lg w-11/12 md:w-1/3 p-6">
+      <div class="bg-white rounded-lg w-11/12 md:w-1/3 p-6 shadow-xl">
         <h3 class="text-lg font-semibold mb-4">Edit Attendance</h3>
         <form @submit.prevent="saveEdit">
           <div class="mb-3">
@@ -114,7 +113,7 @@
           <div class="mb-3">
             <label class="block text-sm font-medium mb-1">Jam Masuk</label>
             <input
-              v-model="editingRecord.timeIn"
+              v-model="editingRecord.time"
               required
               class="w-full border px-3 py-2 rounded"
               type="time"
@@ -129,19 +128,20 @@
               <option value="PRESENT">Present</option>
               <option value="LATE">Late</option>
               <option value="COMPLETED">Completed</option>
+              <option value="EARLY_OUT">Early Out</option>
             </select>
           </div>
           <div class="flex justify-end gap-3 mt-4">
             <button
               type="button"
-              class="px-4 py-2 rounded border hover:bg-gray-50"
+              class="px-4 py-2 rounded border hover:bg-gray-100"
               @click="closeModal"
             >
               Batal
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
+              class="px-4 py-2 rounded bg-gray-700 text-white hover:bg-gray-800"
             >
               Simpan
             </button>
@@ -185,7 +185,7 @@ function formatTime(timeStr: string | null) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// ambil data dari backend
+// Ambil data attendance dari backend
 const fetchAttendances = async () => {
   try {
     const token = getToken();
@@ -194,17 +194,21 @@ const fetchAttendances = async () => {
     });
     const data = await res.json();
 
-    const deptName = user.value?.departmentName ?? "";
-    attendances.value = (data || [])
-      .filter((a: any) => a.departmentName === deptName && a.role === "PEKERJA")
-      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    console.log("📦 Data attendance:", data);
+
+    // Filter hanya pekerja marketing
+    attendances.value = (data || []).filter(
+      (a: any) =>
+        a.department?.name?.toLowerCase() === "marketing" &&
+        a.role === "PEKERJA"
+    );
   } catch (err) {
     console.error("fetchAttendances error:", err);
   }
 };
 
 function markAllPresent() {
-  alert("✅ Mark semua hadir untuk departemen IT. (Coming soon...)");
+  alert("✅ Fitur mark all hadir masih dalam pengembangan.");
 }
 
 function openEdit(rec: any) {

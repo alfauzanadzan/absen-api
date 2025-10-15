@@ -25,7 +25,7 @@ const updateClock = () => {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false, // 🕒 Hilangkan AM/PM
+    hour12: false,
   });
 };
 
@@ -37,10 +37,25 @@ const checkIn = async (qrValue: string) => {
   }
 
   try {
+    // Ambil token dari localStorage / sessionStorage
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+
+    if (!token) {
+      message.value = "❌ Token tidak ditemukan, silakan login ulang.";
+      alert("Token tidak ditemukan, silakan login ulang.");
+      router.push("/login");
+      return;
+    }
+
     const body = { userId: user.value.id, role: user.value.role, qrValue };
 
     const res = await $fetch("http://localhost:3000/attendance/checkin", {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ kirim JWT token
+        "Content-Type": "application/json",
+      },
       body,
     });
 

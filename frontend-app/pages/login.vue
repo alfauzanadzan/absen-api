@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth, Role } from '@/composables/useAuth'
+import { useAuth } from '@/composables/useAuth'
 
 const username = ref('')
 const password = ref('')
@@ -10,7 +10,7 @@ const remember = ref(false)
 const showPassword = ref(false)
 const error = ref('')
 
-const { login, getRedirectPath } = useAuth()
+const { login } = useAuth()
 const router = useRouter()
 
 // =======================
@@ -36,50 +36,6 @@ const passwordStrength = computed(() => {
     case 3: return { label: 'Kuat', val: 75 }
     case 4: return { label: 'Sangat kuat', val: 100 }
     default: return { label: '—', val: 0 }
-  }
-})
-
-// =======================
-// PREVIEW ROLE & REDIRECT
-// =======================
-const previewInfo = computed(() => {
-  if (!username.value.trim()) return null
-
-  const uname = username.value.toLowerCase()
-  let detectedRole: Role = 'KAPROG'
-  let detectedDepartment = 'IT'
-
-  if (uname === 'superadmin' || uname.includes('super')) {
-    detectedRole = 'SUPERADMIN'
-    detectedDepartment = ''
-  } else if (uname === 'admin' || uname.includes('admin')) {
-    detectedRole = 'ADMIN'
-    detectedDepartment = ''
-  } else if (uname.includes('marketing') || uname.includes('mkt') || uname.includes('mia')) {
-    detectedRole = 'KAPROG'
-    detectedDepartment = 'Marketing'
-  } else if (uname.includes('it') || uname.includes('tech') || uname.includes('hizam')) {
-    detectedRole = 'KAPROG'
-    detectedDepartment = 'IT'
-  }
-
-  const mockUser = {
-    username: uname,
-    role: detectedRole,
-    departmentName: detectedDepartment
-  }
-
-  const redirectPath = getRedirectPath(mockUser)
-  return {
-    role: detectedRole,
-    department: detectedDepartment,
-    redirectPath,
-    roleColor: {
-      SUPERADMIN: 'text-red-600 bg-red-50',
-      ADMIN: 'text-purple-600 bg-purple-50',
-      KAPROG: 'text-green-600 bg-green-50',
-      PEKERJA: 'text-green-600 bg-green-50'
-    }[detectedRole]
   }
 })
 
@@ -151,29 +107,6 @@ const handleLogin = async () => {
         <p class="text-slate-500 text-sm">Masuk menggunakan akunmu untuk melanjutkan</p>
       </div>
 
-      <!-- PREVIEW INFO -->
-      <transition name="fade">
-        <div v-if="previewInfo && username.trim()" class="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl text-xs border border-blue-100 shadow-inner">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="text-blue-800 font-semibold mb-1">
-                Role:
-                <span :class="['px-2 py-1 rounded-full text-xs font-medium ml-1', previewInfo.roleColor]">{{ previewInfo.role }}</span>
-              </p>
-              <p class="text-blue-700 font-medium">
-                Department:
-                <span v-if="previewInfo.department">{{ previewInfo.department }}</span>
-                <span v-else class="italic text-slate-500">—</span>
-              </p>
-            </div>
-            <div class="text-right text-slate-700">
-              <p class="font-semibold text-xs">Redirect:</p>
-              <code class="bg-slate-100 border border-slate-200 rounded px-2 py-1 font-mono text-[11px]">{{ previewInfo.redirectPath }}</code>
-            </div>
-          </div>
-        </div>
-      </transition>
-
       <!-- LOGIN FORM -->
       <form @submit.prevent="handleLogin" class="space-y-5">
         <div>
@@ -233,7 +166,7 @@ const handleLogin = async () => {
 
       <!-- FOOTER -->
       <div class="mt-6 text-center text-xs text-slate-400">
-        © {{ new Date().getFullYear() }} Nama Aplikasi • <span class="font-medium text-blue-500">v1.0</span>
+        © {{ new Date().getFullYear() }} ABSEN DIGITAL • <span class="font-medium text-blue-500">v1.0</span>
       </div>
     </div>
   </div>
