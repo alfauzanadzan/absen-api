@@ -32,12 +32,11 @@ const updateClock = () => {
 // ---------- CHECK-IN ----------
 const checkIn = async (qrValue: string) => {
   if (!user.value?.id) {
-    message.value = "⚠ User belum login";
+    message.value = "⚠️ User belum login";
     return;
   }
 
   try {
-    // Ambil token dari localStorage / sessionStorage
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -48,25 +47,49 @@ const checkIn = async (qrValue: string) => {
       return;
     }
 
-    const body = { userId: user.value.id, role: user.value.role, qrValue };
+    // 🧭 Ambil lokasi GPS sebelum kirim ke backend
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        console.log("📍 Lokasi terdeteksi:", latitude, longitude);
 
-    const res = await $fetch("http://localhost:3000/attendance/checkin", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`, // ✅ kirim JWT token
-        "Content-Type": "application/json",
+        const body = {
+          userId: user.value.id,
+          role: user.value.role,
+          qrValue,
+          latitude, // ✅ kirim ke backend
+          longitude, // ✅ kirim ke backend
+        };
+
+        const res = await $fetch("http://localhost:3000/attendance/checkin", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body,
+        });
+
+        console.log("Check-in response:", res);
+        message.value = "✅ Absen berhasil!";
+        alert("✅ Absen berhasil!");
+
+        // ✅ Redirect ke dashboard pekerja IT
+        setTimeout(() => {
+          router.push("/pekerja-it/pekerjait");
+        }, 1000);
       },
-      body,
-    });
-
-    console.log("Check-in response:", res);
-    message.value = "✅ Absen berhasil!";
-    alert("✅ Absen berhasil!");
-
-    // ✅ Redirect ke dashboard pekerja IT
-    setTimeout(() => {
-      router.push("/pekerja-it/pekerjait");
-    }, 1000);
+      (err) => {
+        console.error("❌ Gagal ambil lokasi:", err);
+        alert("⚠️ Tidak bisa ambil lokasi. Aktifkan izin lokasi browser kamu.");
+        message.value = "❌ Gagal ambil lokasi, aktifkan GPS.";
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   } catch (err: any) {
     console.error("Check-in error:", err);
     message.value = `❌ Gagal check-in: ${

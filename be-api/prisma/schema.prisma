@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +8,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//
+// ENUMS
+//
 enum AttendanceStatus {
   PRESENT
   LATE
@@ -27,22 +31,26 @@ enum UserRole {
   PEKERJA
 }
 
+//
+// MODELS
+//
 model User {
-  id              String       @id @default(uuid())
-  username        String       @unique
-  email           String?      @unique
+  id              String        @id @default(uuid())
+  username        String        @unique
+  email           String?       @unique
   password        String
   name            String?
   avatar          String?
-  role            UserRole     @default(PEKERJA)
+  role            UserRole      @default(PEKERJA)
   position        String?
   departmentId    String?
   departmentName  String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
+  // RELATIONS
   attendances     Attendance[]
-  department      Department?  @relation(fields: [departmentId], references: [id])
+  department      Department?   @relation(fields: [departmentId], references: [id])
 }
 
 model Attendance {
@@ -56,24 +64,27 @@ model Attendance {
   type            AttendanceType
   role            UserRole
   status          AttendanceStatus
-  reason          String?           // 🆕 alasan keluar awal
+  reason          String?           // alasan keluar awal
+  latitude        Float?            // posisi absen (opsional)
+  longitude       Float?            // posisi absen (opsional)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
+  // RELATIONS
   user            User?             @relation(fields: [userId], references: [id])
   department      Department?       @relation(fields: [departmentId], references: [id])
 
   @@unique([userId, date, type])
 }
 
-
 model Department {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  code        String       @unique
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id          String        @id @default(uuid())
+  name        String        @unique
+  code        String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
+  // RELATIONS
   users       User[]
   barcodes    Barcode[]
   attendances Attendance[]
@@ -89,5 +100,6 @@ model Barcode {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
+  // RELATION
   department     Department  @relation(fields: [departmentId], references: [id])
 }

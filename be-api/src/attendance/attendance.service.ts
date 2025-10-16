@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceStatus, AttendanceType, UserRole } from '@prisma/client';
 
@@ -7,12 +12,23 @@ export class AttendanceService {
   constructor(private prisma: PrismaService) {}
 
   // ✅ CHECK-IN
-  async checkin(dto: { userId: string; role: UserRole; qrValue: string }) {
-    const { userId, role, qrValue } = dto;
+  async checkin(dto: {
+    userId: string;
+    role: UserRole;
+    qrValue: string;
+    latitude?: number;
+    longitude?: number;
+  }) {
+    const { userId, role, qrValue, latitude, longitude } = dto;
 
     if (!userId) throw new BadRequestException('User ID tidak valid');
     if (!role) throw new BadRequestException('Role tidak valid');
     if (!qrValue) throw new BadRequestException('QR code tidak boleh kosong');
+
+    // ❌ Hanya KAPROG & PEKERJA boleh absen
+    if (role !== UserRole.KAPROG && role !== UserRole.PEKERJA) {
+      throw new ForbiddenException('❌ Role kamu tidak diizinkan untuk melakukan absen');
+    }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User tidak ditemukan');
@@ -53,6 +69,8 @@ export class AttendanceService {
         role,
         type: AttendanceType.IN,
         status,
+        latitude, // ✅ simpan posisi
+        longitude, // ✅ simpan posisi
       },
       include: {
         user: { select: { id: true, name: true, role: true } },
@@ -64,14 +82,25 @@ export class AttendanceService {
   }
 
   // ✅ CHECK-OUT
-  async checkout(dto: { userId: string; qrValue: string; reason?: string }) {
-    const { userId, qrValue, reason } = dto;
+  async checkout(dto: {
+    userId: string;
+    qrValue: string;
+    reason?: string;
+    latitude?: number;
+    longitude?: number;
+  }) {
+    const { userId, qrValue, reason, latitude, longitude } = dto;
 
     if (!userId) throw new BadRequestException('User ID tidak valid');
     if (!qrValue) throw new BadRequestException('QR code tidak boleh kosong');
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User tidak ditemukan');
+
+    // ❌ Hanya KAPROG & PEKERJA boleh checkout
+    if (user.role !== UserRole.KAPROG && user.role !== UserRole.PEKERJA) {
+      throw new ForbiddenException('❌ Role kamu tidak diizinkan untuk melakukan checkout');
+    }
 
     const barcode = await this.prisma.barcode.findUnique({ where: { value: qrValue } });
     if (!barcode) throw new BadRequestException('QR code tidak valid');
@@ -138,6 +167,8 @@ export class AttendanceService {
         type: AttendanceType.OUT,
         status,
         reason: checkoutReason,
+        latitude, // ✅ simpan posisi
+        longitude, // ✅ simpan posisi
       },
       include: {
         user: { select: { id: true, name: true, role: true } },
@@ -169,6 +200,8 @@ export class AttendanceService {
       reason: r.reason,
       user: r.user,
       department: r.department,
+      latitude: r.latitude,
+      longitude: r.longitude,
     }));
   }
 
@@ -178,8 +211,7 @@ export class AttendanceService {
     let startDate = new Date(now);
 
     if (type === 'weekly') {
-      const day = now.getDay(); // Minggu=0
-      startDate = new Date(now);
+      const day = now.getDay();
       startDate.setDate(now.getDate() - day);
     } else if (type === 'monthly') {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -208,5 +240,20 @@ export class AttendanceService {
       count: list.length,
       items: list,
     }));
+  }
+
+  // ✅ GET SEMUA DATA ABSENSI DENGAN KOORDINAT
+  async getAllWithLocation() {
+    return this.prisma.attendance.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      include: {
+        user: { select: { id: true, name: true, username: true, role: true } },
+        department: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

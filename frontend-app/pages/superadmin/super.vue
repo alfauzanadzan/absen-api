@@ -9,6 +9,7 @@ const { user, loadUser, logout } = useAuth()
 // =============================
 // STATE
 // =============================
+const loading = ref(false)
 const stats = ref<{ key: string; label: string; value: number; accent: string }[]>([])
 const divisions = ref<{ id: string; name: string; count: number }[]>([])
 
@@ -26,49 +27,37 @@ const filteredDivisions = computed(() =>
 // =============================
 // FETCH DATA
 // =============================
-const fetchStats = async () => {
+const fetchDashboardData = async () => {
+  loading.value = true
   try {
     const token = localStorage.getItem('token')
-    const res = await fetch('http://localhost:3000/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    const users = await res.json()
+    if (!token) throw new Error('Token tidak ditemukan')
 
-    console.log('Users data:', users) // DEBUG
+    const [deptRes, userRes] = await Promise.all([
+      fetch('http://localhost:3000/departments', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      fetch('http://localhost:3000/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    ])
+
+    const [departments, users] = await Promise.all([deptRes.json(), userRes.json()])
 
     // Hitung berdasarkan role
-    const workerCount = users.filter((u: any) => u.role === 'PEKERJA').length
-    const kaprogCount = users.filter((u: any) => u.role === 'KAPROG').length
-    const adminCount = users.filter((u: any) => u.role === 'ADMIN').length
-    const superadminCount = users.filter((u: any) => u.role === 'SUPERADMIN').length
+    const roleCount = {
+      PEKERJA: users.filter((u: any) => u.role === 'PEKERJA').length,
+      KAPROG: users.filter((u: any) => u.role === 'KAPROG').length,
+      ADMIN: users.filter((u: any) => u.role === 'ADMIN').length,
+      SUPERADMIN: users.filter((u: any) => u.role === 'SUPERADMIN').length,
+    }
 
     stats.value = [
-      { key: 'workers', label: 'Pekerja', value: workerCount, accent: 'green' },
-      { key: 'kaprog', label: 'Kaprog', value: kaprogCount, accent: 'blue' },
-      { key: 'admin', label: 'Admin', value: adminCount, accent: 'purple' },
-      { key: 'superadmin', label: 'Super Admin', value: superadminCount, accent: 'red' },
+      { key: 'workers', label: 'Pekerja', value: roleCount.PEKERJA, accent: 'green' },
+      { key: 'kaprog', label: 'Kaprog', value: roleCount.KAPROG, accent: 'blue' },
+      { key: 'admin', label: 'Admin', value: roleCount.ADMIN, accent: 'purple' },
+      { key: 'superadmin', label: 'Super Admin', value: roleCount.SUPERADMIN, accent: 'red' },
     ]
-  } catch (err) {
-    console.error('Gagal ambil stats:', err)
-  }
-}
-
-const fetchDivisions = async () => {
-  try {
-    const token = localStorage.getItem('token')
-
-    // Fetch daftar department
-    const res = await fetch('http://localhost:3000/departments', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    const departments = await res.json()
-    console.log('Departments data:', departments)
-
-    // Fetch semua user
-    const userRes = await fetch('http://localhost:3000/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    const users = await userRes.json()
 
     // Hitung jumlah user per department
     divisions.value = departments.map((dept: any) => ({
@@ -76,15 +65,17 @@ const fetchDivisions = async () => {
       name: dept.name,
       count: users.filter((u: any) => u.departmentName === dept.name).length,
     }))
-
-    console.log('Divisions with counts:', divisions.value)
   } catch (err) {
-    console.error('Gagal ambil divisions:', err)
-    // Data fallback untuk testing
-    divisions.value = [
-      { id: '1', name: 'IT', count: 0 },
-      { id: '2', name: 'Marketing', count: 0 },
+    console.error('Gagal ambil data dashboard:', err)
+    stats.value = [
+      { key: 'workers', label: 'Pekerja', value: 0, accent: 'green' },
+      { key: 'kaprog', label: 'Kaprog', value: 0, accent: 'blue' },
+      { key: 'admin', label: 'Admin', value: 0, accent: 'purple' },
+      { key: 'superadmin', label: 'Super Admin', value: 0, accent: 'red' },
     ]
+    divisions.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -93,36 +84,14 @@ const fetchDivisions = async () => {
 // =============================
 onMounted(() => {
   if (typeof window !== 'undefined') loadUser()
-  fetchStats()
-  fetchDivisions()
+  fetchDashboardData()
 })
 
 // =============================
 // ACTION
 // =============================
 const handleLogout = () => logout()
-
-const refreshData = () => {
-  fetchStats()
-  fetchDivisions()
-}
-
-// =============================
-// STYLE HELPERS
-// =============================
-const accentToBg = (a: string) =>
-  a === 'green' ? 'bg-green-100 text-green-700' :
-  a === 'blue' ? 'bg-blue-100 text-blue-700' :
-  a === 'red' ? 'bg-red-100 text-red-700' :
-  a === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
-  'bg-purple-100 text-purple-700'
-
-const accentToNumberColor = (a: string) =>
-  a === 'green' ? 'text-green-600' :
-  a === 'blue' ? 'text-blue-600' :
-  a === 'red' ? 'text-red-600' :
-  a === 'yellow' ? 'text-yellow-600' :
-  'text-purple-600'
+const refreshData = () => fetchDashboardData()
 </script>
 
 <template>
@@ -137,18 +106,14 @@ const accentToNumberColor = (a: string) =>
       </div>
 
       <nav class="flex flex-col space-y-3 text-white font-medium">
-        <a
-          href="/superadmin/super"
-          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
-        >🏠 Dashboard</a>
-        <a
-          href="/superadmin/profilsuper"
-          class="p-3 rounded-lg hover:bg-white/20 transition"
-        >👤 Profile</a>
-        <a
-          href="/superadmin/addaccount"
-          class="p-3 rounded-lg hover:bg-white/20 transition"
-        >➕ Add Account</a>
+        <a href="/superadmin/super"
+          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">🏠 Dashboard</a>
+        <a href="/superadmin/profilsuper"
+          class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
+        <a href="/superadmin/addaccount"
+          class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+        <a href="/superadmin/absenlokasi"
+          class="p-3 rounded-lg hover:bg-white/20 transition">📍 Lokasi Absen</a>
       </nav>
     </aside>
 
@@ -169,9 +134,10 @@ const accentToNumberColor = (a: string) =>
         <div class="flex gap-2">
           <button
             @click="refreshData"
-            class="px-3 py-2 bg-green-500 text-white rounded shadow hover:bg-green-600 transition"
+            :disabled="loading"
+            class="px-3 py-2 bg-green-500 text-white rounded shadow hover:bg-green-600 transition disabled:opacity-50"
           >
-            Refresh Data
+            {{ loading ? 'Loading...' : 'Refresh Data' }}
           </button>
           <button
             @click="handleLogout"
@@ -245,6 +211,7 @@ const accentToNumberColor = (a: string) =>
             </span>
           </li>
         </ul>
+
         <div v-else class="text-center text-white/70 py-8">
           Tidak ada department ditemukan
         </div>
