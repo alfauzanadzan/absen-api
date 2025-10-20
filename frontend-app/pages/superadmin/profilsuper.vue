@@ -12,6 +12,8 @@
         <a href="/superadmin/super" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
         <a href="/superadmin/profilsuper" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">👤 Profile</a>
         <a href="/superadmin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
+         <a href="/superadmin/absenlokasi"
+          class="p-3 rounded-lg hover:bg-white/20 transition">📍 Lokasi Absen</a>
       </nav>
     </aside>
 

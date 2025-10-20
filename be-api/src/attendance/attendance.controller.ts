@@ -5,6 +5,7 @@ import {
   UseGuards,
   Get,
   Query,
+  Param,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,7 +18,7 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   // ========================
-  // GET semua data absen
+  // ✅ GET semua data absen (admin)
   // ========================
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -26,7 +27,7 @@ export class AttendanceController {
   }
 
   // ========================
-  // GET laporan harian / mingguan / bulanan
+  // ✅ GET laporan harian / mingguan / bulanan (kaprog)
   // ========================
   @UseGuards(JwtAuthGuard)
   @Get('report')
@@ -37,7 +38,16 @@ export class AttendanceController {
   }
 
   // ========================
-  // POST Check-In
+  // ✅ GET laporan absensi user tertentu (buat pekerja IT)
+  // ========================
+  @UseGuards(JwtAuthGuard)
+  @Get('user/:userId')
+  async getUserReport(@Param('userId') userId: string) {
+    return this.attendanceService.getUserAttendance(userId);
+  }
+
+  // ========================
+  // ✅ POST Check-In
   // ========================
   @UseGuards(JwtAuthGuard)
   @Post('checkin')
@@ -47,15 +57,15 @@ export class AttendanceController {
       userId: string;
       role: UserRole;
       qrValue: string;
-      latitude?: number; // 🆕 posisi absen
-      longitude?: number; // 🆕 posisi absen
+      latitude?: number; // posisi absen
+      longitude?: number; // posisi absen
     },
   ) {
     return this.attendanceService.checkin(dto);
   }
 
   // ========================
-  // POST Check-Out
+  // ✅ POST Check-Out
   // ========================
   @UseGuards(JwtAuthGuard)
   @Post('checkout')
@@ -65,15 +75,15 @@ export class AttendanceController {
       userId: string;
       qrValue: string;
       reason?: string;
-      latitude?: number; // 🆕 posisi keluar
-      longitude?: number; // 🆕 posisi keluar
+      latitude?: number; // posisi keluar
+      longitude?: number; // posisi keluar
     },
   ) {
     return this.attendanceService.checkout(dto);
   }
 
   // ========================
-  // 🆕 GET semua lokasi absensi (buat superadmin lihat di peta)
+  // ✅ GET semua lokasi absensi (buat admin/superadmin lihat di peta)
   // ========================
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)

@@ -11,7 +11,9 @@ import { AttendanceStatus, AttendanceType, UserRole } from '@prisma/client';
 export class AttendanceService {
   constructor(private prisma: PrismaService) {}
 
+  // ========================
   // ✅ CHECK-IN
+  // ========================
   async checkin(dto: {
     userId: string;
     role: UserRole;
@@ -25,7 +27,6 @@ export class AttendanceService {
     if (!role) throw new BadRequestException('Role tidak valid');
     if (!qrValue) throw new BadRequestException('QR code tidak boleh kosong');
 
-    // ❌ Hanya KAPROG & PEKERJA boleh absen
     if (role !== UserRole.KAPROG && role !== UserRole.PEKERJA) {
       throw new ForbiddenException('❌ Role kamu tidak diizinkan untuk melakukan absen');
     }
@@ -69,8 +70,8 @@ export class AttendanceService {
         role,
         type: AttendanceType.IN,
         status,
-        latitude, // ✅ simpan posisi
-        longitude, // ✅ simpan posisi
+        latitude,
+        longitude,
       },
       include: {
         user: { select: { id: true, name: true, role: true } },
@@ -81,7 +82,9 @@ export class AttendanceService {
     return { message: '✅ Check-in berhasil!', data: checkin };
   }
 
+  // ========================
   // ✅ CHECK-OUT
+  // ========================
   async checkout(dto: {
     userId: string;
     qrValue: string;
@@ -97,7 +100,6 @@ export class AttendanceService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User tidak ditemukan');
 
-    // ❌ Hanya KAPROG & PEKERJA boleh checkout
     if (user.role !== UserRole.KAPROG && user.role !== UserRole.PEKERJA) {
       throw new ForbiddenException('❌ Role kamu tidak diizinkan untuk melakukan checkout');
     }
@@ -167,8 +169,8 @@ export class AttendanceService {
         type: AttendanceType.OUT,
         status,
         reason: checkoutReason,
-        latitude, // ✅ simpan posisi
-        longitude, // ✅ simpan posisi
+        latitude,
+        longitude,
       },
       include: {
         user: { select: { id: true, name: true, role: true } },
@@ -179,7 +181,9 @@ export class AttendanceService {
     return { message: '✅ Checkout berhasil!', data: checkout };
   }
 
+  // ========================
   // ✅ GET ALL ATTENDANCE
+  // ========================
   async findAll() {
     const records = await this.prisma.attendance.findMany({
       include: {
@@ -205,7 +209,9 @@ export class AttendanceService {
     }));
   }
 
+  // ========================
   // ✅ REPORT (daily, weekly, monthly)
+  // ========================
   async getReport(type: 'daily' | 'weekly' | 'monthly') {
     const now = new Date();
     let startDate = new Date(now);
@@ -242,7 +248,9 @@ export class AttendanceService {
     }));
   }
 
+  // ========================
   // ✅ GET SEMUA DATA ABSENSI DENGAN KOORDINAT
+  // ========================
   async getAllWithLocation() {
     return this.prisma.attendance.findMany({
       where: {
@@ -255,5 +263,44 @@ export class AttendanceService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ========================
+  // ✅ GET ABSENSI USER SPESIFIK (PEKERJA IT)
+  // ========================
+  async getUserAttendance(userId: string) {
+    if (!userId) throw new BadRequestException('User ID tidak valid');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User tidak ditemukan');
+
+    const records = await this.prisma.attendance.findMany({
+      where: { userId },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+        department: { select: { id: true, name: true } },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    // Gabungkan check-in & check-out per tanggal
+    const grouped: Record<string, any> = {};
+    for (const r of records) {
+      const key = r.date.toISOString().split('T')[0]; // YYYY-MM-DD
+      if (!grouped[key]) {
+        grouped[key] = {
+          date: key,
+          checkInTime: null,
+          checkOutTime: null,
+          status: 'Absent',
+        };
+      }
+
+      if (r.type === AttendanceType.IN) grouped[key].checkInTime = r.time;
+      if (r.type === AttendanceType.OUT) grouped[key].checkOutTime = r.time;
+      grouped[key].status = r.status;
+    }
+
+    return Object.values(grouped);
   }
 }

@@ -1,423 +1,276 @@
 <template>
-  <div class="min-h-screen bg-white-100">
-    <div class="flex">
-      <!-- Sidebar -->
-      <aside class="w-60 bg-white p-6 flex flex-col">
-       <div class="flex items-center justify-center h-20 mb-6">
-        <h1 class="text-lg font-bold text-blue-600">PEKERJA IT</h1>
+  <div class="flex h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md border-r flex flex-col p-6">
+      <div class="flex items-center justify-center h-20 mb-6">
+        <h1 class="text-xl font-extrabold text-blue-600 tracking-wide">PEKERJA IT</h1>
       </div>
-      <nav class="flex flex-col space-y-2">
-        <a href="/pekerja-it/pekerjait" class="p-2 rounded hover:bg-gray-100">🏠 Dashboard</a>
-        <a href="/pekerja-it/profilpekerja" class="p-2 rounded hover:bg-gray-100">Profile</a>
-          <a href="/pekerja-it/reports" class="p-2 rounded bg-blue-50 text-blue-600 font-medium">Reports</a>
+      <nav class="flex flex-col space-y-3 text-gray-700 font-medium">
+        <a href="/pekerja-it/pekerjait" class="p-3 rounded-lg hover:bg-gray-100 transition">🏠 Dashboard</a>
+        <a href="/pekerja-it/profilpekerja" class="p-3 rounded-lg hover:bg-gray-100 transition">👤 Profile</a>
+        <a href="/pekerja-it/reports" class="p-3 rounded-lg bg-blue-50 text-blue-600 shadow transition">📊 Reports</a>
       </nav>
     </aside>
 
-      <!-- Content -->
-      <main class="flex-1 p-6">
-        <div class="mx-auto max-w-5xl">
-          <!-- Header -->
-          <div class="flex items-start justify-between gap-4 mb-6">
+    <!-- Main -->
+    <main class="flex-1 p-8 overflow-y-auto">
+      <!-- Header -->
+      <div class="flex items-start justify-between mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">REPORTS</h1>
+          <p class="text-sm text-gray-500 mt-1">
+            Laporan kehadiran pribadi — pekerja IT
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button @click="downloadCSV" class="px-4 py-2 rounded border hover:bg-gray-50">
+            Export CSV
+          </button>
+          <button @click="printPage" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+            Print
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="bg-white border rounded-lg p-4 mb-6 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
+          <div class="md:col-span-3">
+            <label class="block text-xs text-gray-500 mb-1">Nama</label>
+            <input
+              type="text"
+              v-model="currentUser"
+              readonly
+              class="w-full border rounded px-3 py-2 bg-gray-50"
+            />
+          </div>
+
+          <div class="md:col-span-2 flex items-center gap-2">
             <div>
-              <h1 class="text-3xl font-extrabold tracking-tight">REPORTS</h1>
-              <p class="text-sm text-gray-500 mt-1">
-                Laporan kehadiran pribadi — ringkasan dan detail per hari
-              </p>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <button
-                @click="importPdf"
-                class="inline-flex items-center gap-2 bg-green-400 hover:bg-green-500 text-black px-4 py-2 rounded shadow"
-                title="Import PDF"
-              >
-                <svg
-                  class="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M12 3v9"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                Import PDF
-              </button>
-
-              <button
-                @click="downloadCSV"
-                class="px-4 py-2 rounded border hover:bg-gray-50"
-              >
-                Export CSV
-              </button>
-
-              <button
-                @click="printPage"
-                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Print
-              </button>
-            </div>
-          </div>
-
-          <!-- Filters -->
-          <div class="bg-white border rounded p-4 mb-6 shadow-sm">
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
-              <div class="md:col-span-3">
-                <label class="block text-xs text-gray-500 mb-1">Nama</label>
-                <input
-                  type="text"
-                  v-model="currentUser"
-                  readonly
-                  class="w-full border rounded px-3 py-2 bg-gray-50"
-                />
-              </div>
-
-              <div class="md:col-span-2 flex items-center gap-2">
-                <div>
-                  <label class="block text-xs text-gray-500 mb-1">Bulan</label>
-                  <div class="flex items-center gap-2">
-                    <button
-                      @click="changeMonth(-1)"
-                      class="p-2 border rounded hover:bg-gray-100"
-                      aria-label="prev month"
-                    >
-                      ‹
-                    </button>
-
-                    <select v-model="selectedMonth" class="border rounded px-3 py-2">
-                      <option
-                        v-for="(m, idx) in months"
-                        :key="idx"
-                        :value="idx"
-                      >
-                        {{ m }}
-                      </option>
-                    </select>
-
-                    <button
-                      @click="changeMonth(1)"
-                      class="p-2 border rounded hover:bg-gray-100"
-                      aria-label="next month"
-                    >
-                      ›
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="md:col-span-1 text-right">
-                <label class="block text-xs text-gray-500 mb-1">Tahun</label>
-                <input
-                  readonly
-                  :value="currentYear"
-                  class="border rounded px-3 py-2 bg-gray-50 w-full text-right"
-                />
+              <label class="block text-xs text-gray-500 mb-1">Bulan</label>
+              <div class="flex items-center gap-2">
+                <button @click="changeMonth(-1)" class="p-2 border rounded hover:bg-gray-100">‹</button>
+                <select v-model="selectedMonth" class="border rounded px-3 py-2">
+                  <option v-for="(m, idx) in months" :key="idx" :value="idx">{{ m }}</option>
+                </select>
+                <button @click="changeMonth(1)" class="p-2 border rounded hover:bg-gray-100">›</button>
               </div>
             </div>
           </div>
 
-          <!-- Summary cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div
-              class="bg-white p-4 rounded shadow-sm flex items-center gap-4 border"
-            >
-              <div class="bg-green-50 p-3 rounded">
-                <svg
-                  class="w-6 h-6 text-green-500"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M5 13l4 4L19 7"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-green-600">
-                  {{ stats.present }}
-                </div>
-                <div class="text-sm text-gray-500">Present</div>
-              </div>
-            </div>
-
-            <div
-              class="bg-white p-4 rounded shadow-sm flex items-center gap-4 border"
-            >
-              <div class="bg-red-50 p-3 rounded">
-                <svg
-                  class="w-6 h-6 text-red-500"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M12 8v4l3 3"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-red-600">
-                  {{ stats.late }}
-                </div>
-                <div class="text-sm text-gray-500">Late</div>
-              </div>
-            </div>
-
-            <div
-              class="bg-white p-4 rounded shadow-sm flex items-center gap-4 border"
-            >
-              <div class="bg-yellow-50 p-3 rounded">
-                <svg
-                  class="w-6 h-6 text-yellow-500"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M12 2v6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-yellow-500">
-                  {{ stats.leave }}
-                </div>
-                <div class="text-sm text-gray-500">Leave</div>
-              </div>
-            </div>
-
-            <div
-              class="bg-white p-4 rounded shadow-sm flex items-center gap-4 border"
-            >
-              <div class="bg-indigo-50 p-3 rounded">
-                <svg
-                  class="w-6 h-6 text-indigo-500"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path
-                    d="M3 7h18"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div class="text-2xl font-bold text-indigo-600">
-                  {{ stats.absent }}
-                </div>
-                <div class="text-sm text-gray-500">Absent</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Data table -->
-          <div class="bg-white border rounded shadow-sm overflow-auto">
-            <table class="min-w-full table-auto">
-              <thead class="bg-gray-50 sticky top-0">
-                <tr>
-                  <th class="text-left px-6 py-3 font-medium text-sm">Date</th>
-                  <th class="text-left px-6 py-3 font-medium text-sm">
-                    Check In
-                  </th>
-                  <th class="text-left px-6 py-3 font-medium text-sm">
-                    Check Out
-                  </th>
-                  <th class="text-left px-6 py-3 font-medium text-sm">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr
-                  v-for="rec in filteredRecords"
-                  :key="rec.date"
-                  class="odd:bg-white even:bg-gray-50 border-t"
-                >
-                  <td class="px-6 py-4 text-sm text-gray-700">{{ rec.date }}</td>
-                  <td class="px-6 py-4 text-sm text-gray-700">
-                    {{ rec.checkIn || "-" }}
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-700">
-                    {{ rec.checkOut || "-" }}
-                  </td>
-                  <td class="px-6 py-4 text-sm">
-                    <span
-                      :class="statusClass(rec.status)"
-                      class="font-semibold"
-                    >
-                      {{ rec.status }}
-                    </span>
-                  </td>
-                </tr>
-
-                <tr v-if="filteredRecords.length === 0">
-                  <td
-                    colspan="4"
-                    class="px-6 py-12 text-center text-gray-400"
-                  >
-                    Tidak ada data untuk bulan ini.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Footer -->
-          <div
-            class="mt-6 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-3"
-          >
-            <div class="text-sm text-gray-500">
-              Showing data for
-              <strong>{{ months[selectedMonth] }}</strong> {{ currentYear }}
-            </div>
+          <div class="md:col-span-1 text-right">
+            <label class="block text-xs text-gray-500 mb-1">Tahun</label>
+            <input readonly :value="currentYear" class="border rounded px-3 py-2 bg-gray-50 w-full text-right" />
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div
+          v-for="(val, key) in stats"
+          :key="key"
+          class="bg-white p-4 rounded shadow-sm flex items-center gap-4 border"
+        >
+          <div class="p-3 rounded" :class="bgClass(key)">
+            <svg class="w-6 h-6" :class="iconColor(key)" viewBox="0 0 24 24" fill="none">
+              <path v-if="key === 'present'" d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+              <path v-else-if="key === 'late'" d="M12 8v4l3 3" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+              <path v-else-if="key === 'leave'" d="M12 2v6" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+              <path v-else d="M3 7h18" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xl font-bold" :class="textColor(key)">
+              {{ val }}
+            </div>
+            <div class="text-sm text-gray-500 capitalize">{{ key }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white border rounded shadow-sm overflow-auto">
+        <table class="min-w-full table-auto">
+          <thead class="bg-gray-50 sticky top-0">
+            <tr>
+              <th class="text-left px-6 py-3 font-medium text-sm">Tanggal</th>
+              <th class="text-left px-6 py-3 font-medium text-sm">Check In</th>
+              <th class="text-left px-6 py-3 font-medium text-sm">Check Out</th>
+              <th class="text-left px-6 py-3 font-medium text-sm">Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr v-for="rec in filteredRecords" :key="rec.date" class="odd:bg-white even:bg-gray-50 border-t">
+              <td class="px-6 py-4 text-sm text-gray-700">{{ rec.date }}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">{{ rec.checkIn || '-' }}</td>
+              <td class="px-6 py-4 text-sm text-gray-700">{{ rec.checkOut || '-' }}</td>
+              <td class="px-6 py-4 text-sm font-semibold" :class="statusColor(rec.status)">
+                {{ rec.status }}
+              </td>
+            </tr>
+
+            <tr v-if="filteredRecords.length === 0">
+              <td colspan="4" class="px-6 py-12 text-center text-gray-400">
+                Tidak ada data absensi bulan ini.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-6 text-sm text-gray-500">
+        Showing data for <strong>{{ months[selectedMonth] }}</strong> {{ currentYear }}
+      </div>
+    </main>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 
-const currentUser = ref("Ozan")
+const API_BASE = "http://localhost:3000"
 
+const currentUser = ref("Loading...")
+const userId = ref("")
+const allRecords = ref<any[]>([])
 const months = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ]
 const selectedMonth = ref(new Date().getMonth())
 const currentYear = new Date().getFullYear()
 
-const allRecords = ref([
-  { date: "2025-09-03", checkIn: "07:30", checkOut: "17:00", status: "Present" },
-  { date: "2025-09-02", checkIn: "07:30", checkOut: "17:00", status: "Leave" },
-  { date: "2025-09-01", checkIn: "07:30", checkOut: "17:00", status: "Late" },
-  { date: "2025-08-31", checkIn: "07:35", checkOut: "17:02", status: "Present" },
-  { date: "2025-08-25", checkIn: null, checkOut: null, status: "Absent" },
-])
+// 🔹 Map status backend -> frontend
+function mapStatus(status: string) {
+  status = status.toLowerCase()
+  if (status === "present") return "present"
+  if (status === "late") return "late"
+  if (status === "early_out") return "leave"
+  if (status === "overtime") return "present"
+  if (status === "completed") return "present"
+  return "absent"
+}
 
-const filteredRecords = computed(() =>
-  allRecords.value
-    .filter((r) => {
-      const d = new Date(r.date)
-      return (
-        d.getMonth() === selectedMonth.value && d.getFullYear() === currentYear
-      )
+// 🔹 Load profile + absensi
+async function loadData() {
+  const token = localStorage.getItem("token")
+  if (!token) return alert("Token tidak ditemukan!")
+
+  try {
+    // Profil user
+    const resProfile = await fetch(`${API_BASE}/auth/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
-    .sort((a, b) => b.date.localeCompare(a.date))
+    const profile = await resProfile.json()
+    currentUser.value = profile.name || profile.username || "Pekerja IT"
+    userId.value = profile.id
+
+    // Ambil absensi user
+    const res = await fetch(`${API_BASE}/attendance/user/${profile.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+
+    allRecords.value = data.map((r: any) => ({
+      date: r.date || new Date(r.createdAt).toISOString().split("T")[0],
+      checkIn: r.checkInTime
+        ? new Date(r.checkInTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+        : null,
+      checkOut: r.checkOutTime
+        ? new Date(r.checkOutTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+        : null,
+      status: mapStatus(r.status),
+    }))
+  } catch (err) {
+    console.error("loadData error:", err)
+  }
+}
+
+onMounted(loadData)
+
+// 🔹 Filter per bulan
+const filteredRecords = computed(() =>
+  allRecords.value.filter((r) => {
+    const d = new Date(r.date)
+    return d.getMonth() === selectedMonth.value && d.getFullYear() === currentYear
+  })
 )
 
+// 🔹 Statistik
 const stats = computed(() => {
   const s = { present: 0, late: 0, leave: 0, absent: 0 }
   filteredRecords.value.forEach((r) => {
-    if (r.status === "Present") s.present++
-    else if (r.status === "Late") s.late++
-    else if (r.status === "Leave") s.leave++
-    else if (r.status === "Absent") s.absent++
+    const status = r.status.toLowerCase()
+    if (status.includes("present")) s.present++
+    else if (status.includes("late")) s.late++
+    else if (status.includes("leave")) s.leave++
+    else s.absent++
   })
   return s
 })
 
-function statusClass(status) {
-  if (status === "Present") return "text-green-600"
-  if (status === "Late") return "text-red-600"
-  if (status === "Leave") return "text-yellow-600"
-  if (status === "Absent") return "text-indigo-600"
-  return "text-gray-700"
-}
-
-function changeMonth(delta) {
+// 🔹 Utils
+function changeMonth(delta: number) {
   let next = selectedMonth.value + delta
   if (next < 0) next = 11
   if (next > 11) next = 0
   selectedMonth.value = next
 }
 
-function importPdf() {
-  alert("Import PDF — implementasikan sesuai backend Anda.")
-}
-
 function downloadCSV() {
-  if (!filteredRecords.value.length) {
-    alert("Tidak ada data untuk diexport")
-    return
-  }
-  const header = ["Date", "Check In", "Check Out", "Status"]
-  const rows = filteredRecords.value.map((r) => [
-    r.date,
-    r.checkIn || "",
-    r.checkOut || "",
-    r.status,
-  ])
-  const csv = [header, ...rows]
-    .map((row) =>
-      row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")
-    )
-    .join("\n")
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `${currentUser.value}_report_${months[selectedMonth.value]}_${currentYear}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  if (!filteredRecords.value.length) return alert("Tidak ada data untuk diexport")
+  const header = ["Tanggal", "Check In", "Check Out", "Status"]
+  const rows = filteredRecords.value.map((r) => [r.date, r.checkIn || "", r.checkOut || "", r.status])
+  const csv = [header, ...rows].map((row) => row.join(",")).join("\n")
+  const blob = new Blob([csv], { type: "text/csv" })
+  const link = document.createElement("a")
+  link.href = URL.createObjectURL(blob)
+  link.download = `${currentUser.value}_report_${months[selectedMonth.value]}_${currentYear}.csv`
+  link.click()
 }
 
 function printPage() {
   window.print()
 }
 
-onMounted(() => {
-  // fetch data nyata nanti ganti ini
-})
+// 🔹 Style helpers
+function statusColor(status: string) {
+  const s = status.toLowerCase()
+  if (s.includes("present")) return "text-green-600"
+  if (s.includes("late")) return "text-red-600"
+  if (s.includes("leave")) return "text-yellow-600"
+  if (s.includes("absent")) return "text-indigo-600"
+  return "text-gray-700"
+}
+function bgClass(key: string) {
+  return {
+    present: "bg-green-50",
+    late: "bg-red-50",
+    leave: "bg-yellow-50",
+    absent: "bg-indigo-50",
+  }[key]
+}
+function iconColor(key: string) {
+  return {
+    present: "text-green-500",
+    late: "text-red-500",
+    leave: "text-yellow-500",
+    absent: "text-indigo-500",
+  }[key]
+}
+function textColor(key: string) {
+  return {
+    present: "text-green-600",
+    late: "text-red-600",
+    leave: "text-yellow-500",
+    absent: "text-indigo-600",
+  }[key]
+}
 </script>
-
-<style scoped>
-thead.sticky {
-  backdrop-filter: blur(4px);
-}
-@media print {
-  aside {
-    display: none;
-  }
-  main {
-    padding: 0;
-  }
-}
-</style>
