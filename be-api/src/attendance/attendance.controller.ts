@@ -18,27 +18,38 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   // ========================
-  // ✅ GET semua data absen (admin)
+  // ✅ GET semua data absen (ADMIN / SUPERADMIN)
   // ========================
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @Get()
   async getAll() {
     return this.attendanceService.findAll();
   }
 
   // ========================
-  // ✅ GET laporan harian / mingguan / bulanan (kaprog)
+  // ✅ GET absensi berdasarkan departemen (KAPROG / PEKERJA bisa akses)
+  // contoh: GET /attendance/department/IT
+  // ========================
+  @UseGuards(JwtAuthGuard)
+  @Get('department/:dept')
+  async getByDepartment(@Param('dept') dept: string) {
+    return this.attendanceService.findByDepartment(dept);
+  }
+
+  // ========================
+  // ✅ GET laporan harian / mingguan / bulanan / kemarin
   // ========================
   @UseGuards(JwtAuthGuard)
   @Get('report')
   async getReport(
-    @Query('type') type: 'daily' | 'weekly' | 'monthly' = 'daily',
+    @Query('type') type: 'daily' | 'weekly' | 'monthly' | 'yesterday' = 'daily',
   ) {
     return this.attendanceService.getReport(type);
   }
 
   // ========================
-  // ✅ GET laporan absensi user tertentu (buat pekerja IT)
+  // ✅ GET laporan absensi user tertentu
   // ========================
   @UseGuards(JwtAuthGuard)
   @Get('user/:userId')
@@ -57,8 +68,8 @@ export class AttendanceController {
       userId: string;
       role: UserRole;
       qrValue: string;
-      latitude?: number; // posisi absen
-      longitude?: number; // posisi absen
+      latitude?: number;
+      longitude?: number;
     },
   ) {
     return this.attendanceService.checkin(dto);
@@ -75,18 +86,18 @@ export class AttendanceController {
       userId: string;
       qrValue: string;
       reason?: string;
-      latitude?: number; // posisi keluar
-      longitude?: number; // posisi keluar
+      latitude?: number;
+      longitude?: number;
     },
   ) {
     return this.attendanceService.checkout(dto);
   }
 
   // ========================
-  // ✅ GET semua lokasi absensi (buat admin/superadmin lihat di peta)
+  // ✅ GET semua lokasi absensi (ADMIN / SUPERADMIN)
   // ========================
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @Get('locations')
   async getAllLocations() {
     return this.attendanceService.getAllWithLocation();

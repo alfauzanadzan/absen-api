@@ -13,6 +13,7 @@ const message = ref<string | null>(null);
 const cameraError = ref<string | null>(null);
 const scanning = ref(false);
 const videoRef = ref<HTMLVideoElement | null>(null);
+const manualCode = ref(""); // ✅ input manual barcode
 
 let clockInterval: number | null = null;
 let qrReader: any = null;
@@ -177,6 +178,16 @@ onBeforeUnmount(() => {
   if (clockInterval) clearInterval(clockInterval);
   stopScanner();
 });
+
+// ✅ Manual check-in button
+const handleManualCheckIn = async () => {
+  if (!manualCode.value.trim()) {
+    message.value = "⚠️ Masukkan kode barcode terlebih dahulu.";
+    return;
+  }
+  await checkIn(manualCode.value.trim());
+  manualCode.value = "";
+};
 </script>
 
 <template>
@@ -190,15 +201,9 @@ onBeforeUnmount(() => {
       </div>
 
       <nav class="flex flex-col space-y-3 text-white font-medium">
-        <a href="/kaprog-it/kaprogit" class="p-3 rounded-lg hover:bg-white/20 transition">
-          🏠 Dashboard
-        </a>
-        <a href="/kaprog-it/checkin" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">
-          🕓 Check-in
-        </a>
-        <a href="/kaprog-it/checkout" class="p-3 rounded-lg hover:bg-white/20 transition">
-          ⏰ Check-out
-        </a>
+        <a href="/kaprog-it/kaprogit" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/kaprog-it/checkin" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">🕓 Check-in</a>
+        <a href="/kaprog-it/checkout" class="p-3 rounded-lg hover:bg-white/20 transition">⏰ Check-out</a>
       </nav>
     </aside>
 
@@ -224,10 +229,31 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <!-- MANUAL INPUT -->
+        <div class="mt-5 text-center">
+          <p class="text-white mb-2">🔤 Atau masukkan kode barcode secara manual:</p>
+          <input
+            v-model="manualCode"
+            type="text"
+            placeholder="Contoh: QR_IT_001"
+            class="px-3 py-2 w-64 rounded-md text-center border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <button
+            @click="handleManualCheckIn"
+            class="ml-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition"
+          >
+            Check-in Manual
+          </button>
+        </div>
+
         <!-- STATUS -->
         <div class="text-center mt-4">
           <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
-          <p v-else-if="message" class="text-sm" :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'">
+          <p
+            v-else-if="message"
+            class="text-sm"
+            :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'"
+          >
             {{ message }}
           </p>
           <p v-else class="text-sm text-gray-100">📱 Siap melakukan Check-in</p>

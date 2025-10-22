@@ -16,6 +16,9 @@ const scanning = ref(false);
 const message = ref<string | null>(null);
 const cameraError = ref<string | null>(null);
 
+// 🆕 Input manual
+const manualQr = ref("");
+
 let qrReader: any = null;
 let debounceLock = false;
 
@@ -57,8 +60,8 @@ const checkIn = async (qrValue: string) => {
           userId: user.value.id,
           role: user.value.role,
           qrValue,
-          latitude, // ✅ kirim ke backend
-          longitude, // ✅ kirim ke backend
+          latitude,
+          longitude,
         };
 
         const res = await $fetch("http://localhost:3000/attendance/checkin", {
@@ -74,7 +77,6 @@ const checkIn = async (qrValue: string) => {
         message.value = "✅ Absen berhasil!";
         alert("✅ Absen berhasil!");
 
-        // ✅ Redirect ke dashboard pekerja IT
         setTimeout(() => {
           router.push("/pekerja-it/pekerjait");
         }, 1000);
@@ -150,13 +152,22 @@ const stopScanner = () => {
   scanning.value = false;
 };
 
+// ---------- INPUT MANUAL ----------
+const handleManualCheckIn = async () => {
+  if (!manualQr.value.trim()) {
+    message.value = "⚠️ Masukkan kode manual terlebih dahulu.";
+    return;
+  }
+  await checkIn(manualQr.value.trim());
+  manualQr.value = "";
+};
+
 // ---------- LIFECYCLE ----------
 onMounted(async () => {
   await loadUser();
   updateClock();
   clockInterval = window.setInterval(updateClock, 1000);
 
-  // Hanya auto-start scanner kalau pekerja
   if (user.value?.role === "PEKERJA") {
     await startScanner();
   }
@@ -169,37 +180,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500"
-  >
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- SIDEBAR -->
-    <aside
-      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
-    >
+    <aside class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
       <div class="flex items-center justify-center h-20 mb-8">
-        <h1
-          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide"
-        >
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">
           PEKERJA IT
         </h1>
       </div>
 
       <nav class="flex flex-col space-y-3 text-white font-medium">
-        <a
-          href="/pekerja-it/pekerjait"
-          class="p-3 rounded-lg hover:bg-white/20 transition"
-          >🏠 Dashboard</a
-        >
-        <a
-          href="/pekerja-it/checkin"
-          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
-          >🕓 Check-in</a
-        >
-        <a
-          href="/pekerja-it/checkout"
-          class="p-3 rounded-lg hover:bg-white/20 transition"
-          >⏰ Check-out</a
-        >
+        <a href="/pekerja-it/pekerjait" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/pekerja-it/checkin" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">🕓 Check-in</a>
+        <a href="/pekerja-it/checkout" class="p-3 rounded-lg hover:bg-white/20 transition">⏰ Check-out</a>
       </nav>
     </aside>
 
@@ -214,58 +207,44 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- CAMERA PREVIEW -->
-        <div
-          class="w-80 h-80 bg-black rounded overflow-hidden relative shadow mx-auto"
-        >
-          <video
-            ref="videoRef"
-            autoplay
-            muted
-            playsinline
-            class="w-full h-full object-cover"
-          ></video>
+        <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow mx-auto">
+          <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover"></video>
 
-          <div
-            class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
-          >
+          <div class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm">
             <div>
               <span v-if="scanning">🔍 Scanning...</span>
               <span v-else>⏸ Paused</span>
             </div>
             <div>
-              <button
-                v-if="scanning"
-                @click="stopScanner"
-                class="px-3 py-1 bg-red-500 rounded text-xs"
-              >
-                Stop
-              </button>
-              <button
-                v-else
-                @click="startScanner"
-                class="px-3 py-1 bg-green-500 rounded text-xs"
-              >
-                Start
-              </button>
+              <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">Stop</button>
+              <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
             </div>
           </div>
         </div>
 
+        <!-- 🆕 INPUT MANUAL -->
+        <div class="mt-6 flex flex-col items-center gap-2">
+          <input
+            v-model="manualQr"
+            type="text"
+            placeholder="Masukkan kode manual (barcode)"
+            class="w-80 p-2 border rounded text-center focus:outline-none focus:ring focus:ring-blue-400"
+          />
+          <button
+            @click="handleManualCheckIn"
+            class="w-80 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+          >
+            📥 Check-in Manual
+          </button>
+        </div>
+
         <!-- STATUS -->
         <div class="text-center mt-4">
-          <p v-if="cameraError" class="text-sm text-red-600">
-            {{ cameraError }}
-          </p>
-          <p
-            v-else-if="message"
-            class="text-sm"
-            :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'"
-          >
+          <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
+          <p v-else-if="message" class="text-sm" :class="message.includes('✅') ? 'text-green-600' : 'text-red-600'">
             {{ message }}
           </p>
-          <p v-else class="text-sm text-gray-100">
-            📱 Siap melakukan Check-in
-          </p>
+          <p v-else class="text-sm text-gray-100">📱 Siap melakukan Check-in</p>
         </div>
       </div>
     </main>

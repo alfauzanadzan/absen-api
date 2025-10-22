@@ -46,6 +46,23 @@
             </div>
           </div>
 
+          <!-- ✅ Input Manual -->
+          <div class="bg-white/20 backdrop-blur-md p-4 rounded-lg w-full max-w-sm mt-4">
+            <p class="text-white mb-2 text-center font-semibold">Atau masukkan kode QR secara manual:</p>
+            <input
+              v-model="manualCode"
+              type="text"
+              placeholder="Masukkan kode QR..."
+              class="w-full p-2 rounded text-black focus:outline-none"
+            />
+            <button
+              @click="handleManualCheckout"
+              class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+            >
+              Kirim Manual
+            </button>
+          </div>
+
           <!-- Status -->
           <div class="text-center mt-2">
             <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
@@ -88,7 +105,6 @@
 </template>
 
 <script setup lang="ts">
-// Script tetap sama, hanya sidebar role diganti PEKERJA IT
 definePageMeta({ middleware: ["role"] })
 
 import { ref, onMounted, onBeforeUnmount } from "vue"
@@ -109,17 +125,17 @@ const videoRef = ref<HTMLVideoElement | null>(null)
 let qrReader: any = null
 let clockInterval: number | null = null
 
-// 🕒 Jam real-time
+// ✅ Input manual
+const manualCode = ref("") // input kode manual
+
 const updateClock = () => {
   const now = new Date()
   time.value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
 }
 
-// 🔑 Token
 const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-// 📤 Kirim data ke backend
 const postAttendance = async (payload: Record<string, any>) => {
   message.value = null
   try {
@@ -197,7 +213,29 @@ const handleDecodedRaw = async (raw: string) => {
   setTimeout(() => (debounceLock = false), 2000)
 }
 
-// 📸 Scanner
+// ✅ Manual checkout handler
+const handleManualCheckout = async () => {
+  if (!manualCode.value.trim()) {
+    message.value = "⚠️ Masukkan kode QR manual terlebih dahulu!"
+    return
+  }
+
+  const now = new Date()
+  lastQr.value = manualCode.value.trim()
+
+  if (now.getHours() < 17) {
+    showReasonModal.value = true
+    return
+  }
+
+  await postAttendance({
+    userId: String(user.value?.id),
+    qrValue: String(manualCode.value.trim()),
+  })
+
+  manualCode.value = ""
+}
+
 const startScanner = async () => {
   cameraError.value = null
   scanning.value = false
@@ -231,7 +269,6 @@ const stopScanner = () => {
   }
 }
 
-// 🚀 Lifecycle
 onMounted(async () => {
   if (typeof window !== "undefined") await loadUser()
   updateClock()

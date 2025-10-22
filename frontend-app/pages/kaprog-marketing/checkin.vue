@@ -13,6 +13,7 @@ const message = ref<string | null>(null);
 const cameraError = ref<string | null>(null);
 const scanning = ref(false);
 const videoRef = ref<HTMLVideoElement | null>(null);
+const manualQR = ref(""); // 🔹 input manual QR
 
 let clockInterval: number | null = null;
 let qrReader: any = null;
@@ -165,6 +166,15 @@ const stopScanner = () => {
   scanning.value = false;
 };
 
+// 🧾 INPUT MANUAL CHECK-IN
+const manualCheckIn = async () => {
+  if (!manualQR.value.trim()) {
+    message.value = "⚠️ Masukkan kode QR terlebih dahulu.";
+    return;
+  }
+  await checkIn(manualQR.value.trim());
+};
+
 // 🔄 LIFECYCLE
 onMounted(async () => {
   await loadUser();
@@ -222,6 +232,23 @@ onBeforeUnmount(() => {
               <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
             </div>
           </div>
+        </div>
+
+        <!-- INPUT MANUAL -->
+        <div class="mt-6 text-center">
+          <p class="text-sm text-gray-200 mb-2">Atau input manual kode QR:</p>
+          <input
+            v-model="manualQR"
+            type="text"
+            placeholder="Masukkan kode QR di sini..."
+            class="w-full px-3 py-2 rounded border border-gray-300 text-center text-sm"
+          />
+          <button
+            @click="manualCheckIn"
+            class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+          >
+            🚀 Check-in Manual
+          </button>
         </div>
 
         <!-- STATUS -->

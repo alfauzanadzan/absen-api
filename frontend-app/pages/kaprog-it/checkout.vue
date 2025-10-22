@@ -19,6 +19,7 @@ const cameraError = ref<string | null>(null);
 const videoRef = ref<HTMLVideoElement | null>(null);
 let qrReader: any = null;
 let clockInterval: number | null = null;
+const manualCode = ref(""); // ✅ input manual barcode
 
 // 🧭 Mode
 const mode = ref<"checkin" | "checkout">("checkout");
@@ -179,6 +180,41 @@ const stopScanner = () => {
   }
 };
 
+// ✅ Manual Check-out
+const handleManualCheckout = async () => {
+  if (!manualCode.value.trim()) {
+    message.value = "⚠️ Masukkan kode barcode terlebih dahulu.";
+    return;
+  }
+
+  const code = manualCode.value.trim();
+  manualCode.value = "";
+  lastQr.value = code;
+
+  const now = new Date();
+  if (now.getHours() < 17) {
+    showReasonModal.value = true;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      await postAttendance({
+        userId: String(user.value?.id),
+        qrValue: code,
+        latitude,
+        longitude,
+      });
+    },
+    (err) => {
+      console.error("GPS error:", err);
+      message.value = "❌ Gagal ambil lokasi GPS.";
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+};
+
 // 🚀 Lifecycle
 onMounted(async () => {
   if (typeof window !== "undefined") await loadUser();
@@ -232,6 +268,23 @@ onBeforeUnmount(() => {
               <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">Stop</button>
               <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
             </div>
+          </div>
+
+          <!-- Manual Input -->
+          <div class="text-center mt-4">
+            <p class="text-white mb-2">🔤 Atau masukkan kode barcode secara manual:</p>
+            <input
+              v-model="manualCode"
+              type="text"
+              placeholder="Contoh: QR_IT_001"
+              class="px-3 py-2 w-64 rounded-md text-center border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              @click="handleManualCheckout"
+              class="ml-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition"
+            >
+              Check-out Manual
+            </button>
           </div>
 
           <!-- Status -->

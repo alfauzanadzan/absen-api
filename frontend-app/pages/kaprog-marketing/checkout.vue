@@ -1,29 +1,31 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ["role"] })
 
-import { ref, onMounted, onBeforeUnmount, watch } from "vue"
-import { useRuntimeConfig, useRoute } from "#imports"
+import { ref, onMounted, onBeforeUnmount } from "vue"
+import { useRuntimeConfig } from "#imports"
 import { useAuth } from "@/composables/useAuth"
 
 const config = useRuntimeConfig()
 const apiBase = config.public?.apiBase ?? "http://localhost:3000"
-
 const { user, loadUser } = useAuth()
-const route = useRoute()
 
-// ⚙️ UI State
+// ⚙️ State
 const time = ref("")
 const message = ref<string | null>(null)
 const scanning = ref(false)
 const cameraError = ref<string | null>(null)
 const videoRef = ref<HTMLVideoElement | null>(null)
+const showReasonModal = ref(false)
+const showManualModal = ref(false)
+const reason = ref("")
+const manualQr = ref("")
+const lastQr = ref<string | null>(null)
+
 let qrReader: any = null
 let clockInterval: number | null = null
+let debounceLock = false
 
-// 🧭 Mode
-const mode = ref<"checkin" | "checkout">("checkout")
-
-// 🕒 Jam real-time
+// 🕒 Real-time clock
 const updateClock = () => {
   const now = new Date()
   time.value = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
@@ -33,7 +35,7 @@ const updateClock = () => {
 const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-// 📤 Kirim data ke backend
+// 📤 Kirim ke backend
 const postAttendance = async (payload: Record<string, any>) => {
   message.value = null
   try {
@@ -50,7 +52,6 @@ const postAttendance = async (payload: Record<string, any>) => {
     const text = await res.text().catch(() => "")
     if (!res.ok) {
       message.value = `❌ Gagal checkout: ${text || res.statusText}`
-      console.error(`❌ Gagal checkout:`, text)
       return false
     }
 
@@ -64,10 +65,7 @@ const postAttendance = async (payload: Record<string, any>) => {
   }
 }
 
-// 🧾 Modal alasan keluar awal
-const showReasonModal = ref(false)
-const reason = ref("")
-
+// 🧾 Submit alasan
 const submitReason = async () => {
   if (!reason.value.trim()) {
     message.value = "⚠️ Isi alasan dulu sebelum checkout!"
@@ -79,12 +77,10 @@ const submitReason = async () => {
     qrValue: String(lastQr.value),
     reason: reason.value,
   })
+  reason.value = ""
 }
 
-// 🔍 QR Handling
-let debounceLock = false
-const lastQr = ref<string | null>(null)
-
+// 🔍 Handle QR
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return
   debounceLock = true
@@ -99,7 +95,7 @@ const handleDecodedRaw = async (raw: string) => {
   const now = new Date()
   lastQr.value = raw
 
-  // 💡 Kalau checkout sebelum jam 17:00 → minta alasan
+  // kalau checkout sebelum jam 17:00 → minta alasan
   if (now.getHours() < 17) {
     showReasonModal.value = true
     debounceLock = false
@@ -114,7 +110,7 @@ const handleDecodedRaw = async (raw: string) => {
   setTimeout(() => (debounceLock = false), 2000)
 }
 
-// 📸 Scanner
+// 📸 ZXing Scanner
 const startScanner = async () => {
   cameraError.value = null
   scanning.value = false
@@ -149,6 +145,28 @@ const stopScanner = () => {
   }
 }
 
+// ✍️ Manual Input
+const submitManualQr = async () => {
+  if (!manualQr.value.trim()) {
+    message.value = "⚠️ QR manual belum diisi!"
+    return
+  }
+  showManualModal.value = false
+  lastQr.value = manualQr.value
+  manualQr.value = ""
+
+  const now = new Date()
+  if (now.getHours() < 17) {
+    showReasonModal.value = true
+    return
+  }
+
+  await postAttendance({
+    userId: String(user.value?.id),
+    qrValue: String(lastQr.value),
+  })
+}
+
 // 🚀 Lifecycle
 onMounted(async () => {
   if (typeof window !== "undefined") await loadUser()
@@ -164,8 +182,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
-    <aside
-      class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
       <div class="flex items-center justify-center h-20 mb-8">
         <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">KAPROG Marketing</h1>
       </div>
@@ -173,17 +191,18 @@ onBeforeUnmount(() => {
       <nav class="flex flex-col space-y-3 text-white font-medium">
         <a href="/kaprog-marketing/kaprogmarketing" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
         <a href="/kaprog-marketing/checkin" class="p-3 rounded-lg hover:bg-white/20 transition">🕓 Check-in</a>
-        <a href="/kaprog-marketing/checkout" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"> ⏰ Check-out</a>
+        <a href="/kaprog-marketing/checkout" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">⏰ Check-out</a>
       </nav>
     </aside>
 
+    <!-- Main -->
     <main class="flex-1 p-8 overflow-y-auto flex flex-col items-center">
       <div class="w-full max-w-2xl">
         <div class="flex items-center justify-between mb-6">
           <div>
             <h1 class="text-2xl font-bold">Check-out Department</h1>
-            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code untuk Check-out</p>
-            <p class="text-xs text-gray-400 mt-1">Department Anda: {{ user?.department?.name || "Belum ada" }}</p>
+            <p class="text-sm text-gray-500">Arahkan kamera ke QR Code atau input manual</p>
+            <p class="text-xs text-gray-400 mt-1">Department: {{ user?.department?.name || "Belum ada" }}</p>
           </div>
           <div class="text-right">
             <div class="text-3xl font-bold">{{ time }}</div>
@@ -191,7 +210,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Scanner -->
+        <!-- Scanner Box -->
         <div class="flex flex-col items-center gap-4">
           <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow-lg">
             <client-only>
@@ -200,14 +219,17 @@ onBeforeUnmount(() => {
 
             <div class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm">
               <span>{{ scanning ? "🔍 Scanning..." : "⏸ Paused" }}</span>
-              <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">
-                Stop
-              </button>
-              <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">
-                Start
-              </button>
+              <div class="flex gap-2">
+                <button v-if="scanning" @click="stopScanner" class="px-3 py-1 bg-red-500 rounded text-xs">Stop</button>
+                <button v-else @click="startScanner" class="px-3 py-1 bg-green-500 rounded text-xs">Start</button>
+              </div>
             </div>
           </div>
+
+          <!-- Tombol input manual -->
+          <button @click="showManualModal = true" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            ✍️ Input Manual QR
+          </button>
 
           <!-- Status -->
           <div class="text-center mt-2">
@@ -228,10 +250,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- 🧾 Modal Alasan -->
-      <div
-        v-if="showReasonModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <!-- Modal Alasan -->
+      <div v-if="showReasonModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl p-6 w-96">
           <h2 class="text-lg font-bold mb-3">Alasan Keluar Sebelum Jam 17:00</h2>
           <textarea
@@ -243,6 +263,23 @@ onBeforeUnmount(() => {
           <div class="flex justify-end mt-4 gap-2">
             <button @click="showReasonModal = false" class="px-3 py-1 bg-gray-300 rounded">Batal</button>
             <button @click="submitReason" class="px-3 py-1 bg-blue-500 text-white rounded">Kirim</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Input Manual -->
+      <div v-if="showManualModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-96">
+          <h2 class="text-lg font-bold mb-3">Input Manual QR Code</h2>
+          <input
+            v-model="manualQr"
+            type="text"
+            placeholder="Masukkan kode QR secara manual..."
+            class="w-full p-2 border rounded text-sm"
+          />
+          <div class="flex justify-end mt-4 gap-2">
+            <button @click="showManualModal = false" class="px-3 py-1 bg-gray-300 rounded">Batal</button>
+            <button @click="submitManualQr" class="px-3 py-1 bg-green-600 text-white rounded">Kirim</button>
           </div>
         </div>
       </div>

@@ -1,31 +1,57 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+} from '@nestjs/common';
 import { DepartmentsService } from './departments.service';
 
 @Controller('departments')
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
-  // ✅ Ambil semua department
   @Get()
   findAll() {
     return this.departmentsService.findAll();
   }
 
-  // ✅ Ambil 1 department by ID
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.departmentsService.findOne(id);
   }
 
-  // ✅ Ambil barcode by value (dipakai saat scan QR)
-  @Get('barcode/:value')
-  async findByBarcode(@Param('value') value: string) {
-    const barcode = await this.departmentsService.findByBarcode(value);
+  @Get('/barcode/:value')
+  findByBarcode(@Param('value') value: string) {
+    return this.departmentsService.findByBarcode(value);
+  }
 
-    if (!barcode) {
-      throw new NotFoundException('Barcode tidak ditemukan');
-    }
+  @Post()
+  create(
+    @Body()
+    body: { name: string; code: string; startTime: string; endTime: string },
+  ) {
+    return this.departmentsService.create(body);
+  }
 
-    return barcode; // ✅ hasil sudah include department
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      code?: string;
+      startTime?: string;
+      endTime?: string;
+    },
+  ) {
+    return this.departmentsService.update(id, body);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.departmentsService.delete(id);
   }
 }

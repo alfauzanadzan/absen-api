@@ -8,7 +8,6 @@ import { useAuth } from "@/composables/useAuth";
 const { user, loadUser } = useAuth();
 const router = useRouter();
 
-// ---------- STATE ----------
 const time = ref("");
 let clockInterval: number | null = null;
 const videoRef = ref<HTMLVideoElement | null>(null);
@@ -16,10 +15,11 @@ const scanning = ref(false);
 const message = ref<string | null>(null);
 const cameraError = ref<string | null>(null);
 
+const manualCode = ref(""); // ✅ Tambahan untuk input manual
+
 let qrReader: any = null;
 let debounceLock = false;
 
-// ---------- UPDATE CLOCK ----------
 const updateClock = () => {
   time.value = new Date().toLocaleTimeString([], {
     hour: "2-digit",
@@ -37,28 +37,23 @@ const checkIn = async (qrValue: string) => {
   }
 
   try {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
-
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
-      message.value = "❌ Token tidak ditemukan, silakan login ulang.";
       alert("Token tidak ditemukan, silakan login ulang.");
       router.push("/login");
       return;
     }
 
-    // 🧭 Ambil lokasi GPS sebelum kirim ke backend
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
-        console.log("📍 Lokasi terdeteksi:", latitude, longitude);
 
         const body = {
           userId: user.value.id,
           role: user.value.role,
           qrValue,
-          latitude, // ✅ kirim ke backend
-          longitude, // ✅ kirim ke backend
+          latitude,
+          longitude,
         };
 
         const res = await $fetch("http://localhost:3000/attendance/checkin", {
@@ -74,21 +69,15 @@ const checkIn = async (qrValue: string) => {
         message.value = "✅ Absen berhasil!";
         alert("✅ Absen berhasil!");
 
-        // ✅ Redirect ke dashboard pekerja IT
         setTimeout(() => {
-          router.push("/pekerja-it/pekerjait");
+          router.push("/pekerja-marketing/pekerjait");
         }, 1000);
       },
       (err) => {
         console.error("❌ Gagal ambil lokasi:", err);
-        alert("⚠️ Tidak bisa ambil lokasi. Aktifkan izin lokasi browser kamu.");
-        message.value = "❌ Gagal ambil lokasi, aktifkan GPS.";
+        alert("⚠️ Aktifkan izin lokasi browser kamu.");
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   } catch (err: any) {
     console.error("Check-in error:", err);
@@ -98,7 +87,6 @@ const checkIn = async (qrValue: string) => {
   }
 };
 
-// ---------- HANDLE QR ----------
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return;
   debounceLock = true;
@@ -110,7 +98,6 @@ const handleDecodedRaw = async (raw: string) => {
   setTimeout(() => (debounceLock = false), 2000);
 };
 
-// ---------- START SCANNER ----------
 const startScanner = async () => {
   cameraError.value = null;
 
@@ -130,9 +117,6 @@ const startScanner = async () => {
       videoRef.value,
       (result: any, err: any) => {
         if (result) handleDecodedRaw(result.getText());
-        else if (err && err.name !== "NotFoundException") {
-          console.debug("Scanner error:", err);
-        }
       }
     );
 
@@ -144,19 +128,16 @@ const startScanner = async () => {
   }
 };
 
-// ---------- STOP SCANNER ----------
 const stopScanner = () => {
   if (qrReader) qrReader.reset?.();
   scanning.value = false;
 };
 
-// ---------- LIFECYCLE ----------
 onMounted(async () => {
   await loadUser();
   updateClock();
   clockInterval = window.setInterval(updateClock, 1000);
 
-  // Hanya auto-start scanner kalau pekerja
   if (user.value?.role === "PEKERJA") {
     await startScanner();
   }
@@ -166,28 +147,31 @@ onBeforeUnmount(() => {
   if (clockInterval) clearInterval(clockInterval);
   stopScanner();
 });
+
+// ✅ Tambahan fungsi input manual
+const handleManualCheckin = async () => {
+  if (!manualCode.value.trim()) {
+    alert("Masukkan kode QR secara manual!");
+    return;
+  }
+  await checkIn(manualCode.value.trim());
+};
 </script>
 
 <template>
-  <div
-    class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500"
-  >
+  <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- SIDEBAR -->
     <aside
       class="w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
     >
       <div class="flex items-center justify-center h-20 mb-8">
-        <h1
-          class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide"
-        >
+        <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">
           PEKERJA MARKETING
         </h1>
       </div>
 
       <nav class="flex flex-col space-y-3 text-white font-medium">
-        <a
-          href="/pekerja-marketing/pekerjait"
-          class="p-3 rounded-lg hover:bg-white/20 transition"
+        <a href="/pekerja-marketing/pekerjamarketing" class="p-3 rounded-lg hover:bg-white/20 transition"
           >🏠 Dashboard</a
         >
         <a
@@ -195,9 +179,7 @@ onBeforeUnmount(() => {
           class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
           >🕓 Check-in</a
         >
-        <a
-          href="/pekerja-marketing/checkout"
-          class="p-3 rounded-lg hover:bg-white/20 transition"
+        <a href="/pekerja-marketing/checkout" class="p-3 rounded-lg hover:bg-white/20 transition"
           >⏰ Check-out</a
         >
       </nav>
@@ -214,16 +196,8 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- CAMERA PREVIEW -->
-        <div
-          class="w-80 h-80 bg-black rounded overflow-hidden relative shadow mx-auto"
-        >
-          <video
-            ref="videoRef"
-            autoplay
-            muted
-            playsinline
-            class="w-full h-full object-cover"
-          ></video>
+        <div class="w-80 h-80 bg-black rounded overflow-hidden relative shadow mx-auto">
+          <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover"></video>
 
           <div
             class="absolute left-0 right-0 bottom-0 p-3 bg-black/40 text-white flex items-center justify-between text-sm"
@@ -251,11 +225,26 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <!-- ✅ INPUT MANUAL SECTION -->
+        <div class="mt-6 text-center bg-white/20 p-4 rounded-lg shadow-lg">
+          <p class="text-white mb-2 font-semibold">Atau masukkan kode QR secara manual:</p>
+          <input
+            v-model="manualCode"
+            type="text"
+            placeholder="Masukkan kode QR..."
+            class="w-full p-2 rounded text-black focus:outline-none"
+          />
+          <button
+            @click="handleManualCheckin"
+            class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+          >
+            Kirim Manual
+          </button>
+        </div>
+
         <!-- STATUS -->
         <div class="text-center mt-4">
-          <p v-if="cameraError" class="text-sm text-red-600">
-            {{ cameraError }}
-          </p>
+          <p v-if="cameraError" class="text-sm text-red-600">{{ cameraError }}</p>
           <p
             v-else-if="message"
             class="text-sm"
@@ -263,9 +252,7 @@ onBeforeUnmount(() => {
           >
             {{ message }}
           </p>
-          <p v-else class="text-sm text-gray-100">
-            📱 Siap melakukan Check-in
-          </p>
+          <p v-else class="text-sm text-gray-100">📱 Siap melakukan Check-in</p>
         </div>
       </div>
     </main>

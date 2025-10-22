@@ -1,4 +1,6 @@
-// prisma/schema.prisma
+//
+// GENERATOR & DATASOURCE
+//
 generator client {
   provider = "prisma-client-js"
 }
@@ -34,6 +36,7 @@ enum UserRole {
 //
 // MODELS
 //
+
 model User {
   id              String        @id @default(uuid())
   username        String        @unique
@@ -64,9 +67,9 @@ model Attendance {
   type            AttendanceType
   role            UserRole
   status          AttendanceStatus
-  reason          String?           // alasan keluar awal
-  latitude        Float?            // posisi absen (opsional)
-  longitude       Float?            // posisi absen (opsional)
+  reason          String?
+  latitude        Float?
+  longitude       Float?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -81,14 +84,19 @@ model Department {
   id          String        @id @default(uuid())
   name        String        @unique
   code        String        @unique
+
+  // ⚙️ Gunakan TIME native PostgreSQL → cuma jam saja
+  startTime   DateTime?     @db.Time
+  endTime     DateTime?     @db.Time
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  // RELATIONS
   users       User[]
   barcodes    Barcode[]
   attendances Attendance[]
 }
+
 
 model Barcode {
   id             String      @id @default(uuid())
@@ -100,6 +108,5 @@ model Barcode {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  // RELATION
   department     Department  @relation(fields: [departmentId], references: [id])
 }

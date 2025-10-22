@@ -128,6 +128,7 @@ onBeforeUnmount(() => {
 
       <nav class="flex flex-col space-y-3 text-white font-medium">
         <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/admin/daftar-department" class="p-3 rounded-lg hover:bg-white/20 transition">🏢 Daftar Department</a>
         <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
         <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
         <a href="/admin/attendance" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">📝 Attendance</a>

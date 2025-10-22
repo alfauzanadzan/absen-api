@@ -1,17 +1,24 @@
 <template>
   <div class="flex h-screen bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500">
     <!-- Sidebar -->
-    <aside class="sticky top-0 z-20 w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30">
+    <aside
+      class="sticky top-0 z-20 w-64 bg-white/30 backdrop-blur-md p-6 flex flex-col shadow-lg border-r border-white/30"
+    >
       <div class="flex items-center justify-center h-20 mb-8">
         <h1 class="text-xl font-extrabold text-white drop-shadow-lg tracking-wide">ADMIN</h1>
       </div>
 
       <nav class="flex flex-col space-y-3 text-white font-medium">
         <a href="/admin/admin" class="p-3 rounded-lg hover:bg-white/20 transition">🏠 Dashboard</a>
+        <a href="/admin/daftar-department" class="p-3 rounded-lg hover:bg-white/20 transition">🏢 Daftar Department</a>
         <a href="/admin/profiladmin" class="p-3 rounded-lg hover:bg-white/20 transition">👤 Profile</a>
         <a href="/admin/addaccount" class="p-3 rounded-lg hover:bg-white/20 transition">➕ Add Account</a>
         <a href="/admin/attendance" class="p-3 rounded-lg hover:bg-white/20 transition">📝 Attendance</a>
-        <a href="/admin/reports" class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition">📊 Reports</a>
+        <a
+          href="/admin/reports"
+          class="p-3 rounded-lg bg-white/30 text-white shadow hover:bg-white/40 transition"
+          >📊 Reports</a
+        >
       </nav>
     </aside>
 
@@ -34,7 +41,9 @@
       </div>
 
       <!-- Table -->
-      <div class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+      <div
+        class="mt-6 bg-white/20 backdrop-blur-md rounded-2xl shadow-2xl overflow-x-auto border border-white/30 transition hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+      >
         <table class="min-w-full text-gray-800">
           <thead class="bg-white/30 text-gray-800 font-semibold uppercase text-sm">
             <tr>
@@ -100,8 +109,9 @@
                 class="border-t hover:bg-gray-50"
               >
                 <td class="px-4 py-2">{{ i + 1 }}</td>
-                <td class="px-4 py-2">{{ item.user.name }}</td>
-                <td class="px-4 py-2">{{ item.user.role }}</td>
+                <!-- 🔥 AUTO DETECT nama & role -->
+                <td class="px-4 py-2">{{ getName(item) }}</td>
+                <td class="px-4 py-2">{{ getRole(item) }}</td>
                 <td class="px-4 py-2">{{ item.status }}</td>
                 <td class="px-4 py-2">{{ formatTime(item.time) }}</td>
               </tr>
@@ -128,7 +138,9 @@ const showModal = ref(false);
 const modalRow = ref<any>(null);
 const modalList = ref<any[]>([]);
 
-function pad(n: number) { return n < 10 ? "0" + n : n; }
+function pad(n: number) {
+  return n < 10 ? "0" + n : n;
+}
 
 const displayDate = computed(() => {
   const now = new Date();
@@ -136,14 +148,19 @@ const displayDate = computed(() => {
     return `Today: ${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
   } else if (reportType.value === "weekly") {
     const day = now.getDay();
-    const start = new Date(now); start.setDate(now.getDate() - day);
-    const end = new Date(start); end.setDate(start.getDate() + 6);
-    return `Week: ${pad(start.getDate())}-${pad(start.getMonth()+1)} to ${pad(end.getDate())}-${pad(end.getMonth()+1)}`;
+    const start = new Date(now);
+    start.setDate(now.getDate() - day);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return `Week: ${pad(start.getDate())}-${pad(start.getMonth() + 1)} to ${pad(
+      end.getDate()
+    )}-${pad(end.getMonth() + 1)}`;
   } else if (reportType.value === "monthly") {
-    return `Month: ${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}`;
-  } else { // yesterday
-    const d = new Date(); d.setDate(d.getDate() - 1);
-    return `Yesterday: ${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()}`;
+    return `Month: ${now.toLocaleString("default", { month: "long" })} ${now.getFullYear()}`;
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return `Yesterday: ${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
   }
 });
 
@@ -153,16 +170,28 @@ function formatTime(dateStr: string | null) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// ✅ AUTO DETECT NAMA DAN ROLE
+function getName(item: any) {
+  return item.user?.name || item.name || item.userName || item.userId || "Tidak diketahui";
+}
+
+function getRole(item: any) {
+  return item.user?.role || item.role || "Tidak diketahui";
+}
+
 async function loadReports() {
   try {
     const token = localStorage.getItem("token");
-    if (!token) { console.error("Token tidak ditemukan"); return; }
+    if (!token) {
+      console.error("Token tidak ditemukan");
+      return;
+    }
 
     let url = `${API_BASE}/attendance/report?type=${reportType.value}`;
     if (reportType.value === "yesterday") url = `${API_BASE}/attendance/report/yesterday`;
 
     const res = await fetch(url, {
-      headers: { "Authorization": `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
@@ -172,7 +201,27 @@ async function loadReports() {
     }
 
     const data = await res.json();
-    reportRows.value = Array.isArray(data) ? data : [];
+    console.log("DATA DARI BACKEND:", data);
+
+    if (data && data.result) {
+      const grouped: Record<string, any[]> = {};
+
+      for (const dateKey in data.result) {
+        const departments = data.result[dateKey];
+        for (const dept in departments) {
+          if (!grouped[dept]) grouped[dept] = [];
+          grouped[dept].push(...departments[dept]);
+        }
+      }
+
+      reportRows.value = Object.entries(grouped).map(([department, items]) => ({
+        department,
+        count: items.length,
+        items,
+      }));
+    } else {
+      reportRows.value = [];
+    }
   } catch (err) {
     console.error("Gagal ambil laporan:", err);
     reportRows.value = [];
@@ -182,9 +231,15 @@ async function loadReports() {
 function viewRow(row: any) {
   modalRow.value = row;
   modalList.value = row.items;
+  console.log("DETAIL ROW:", row.items);
   showModal.value = true;
 }
-function closeModal() { showModal.value = false; modalRow.value = null; modalList.value = []; }
+
+function closeModal() {
+  showModal.value = false;
+  modalRow.value = null;
+  modalList.value = [];
+}
 
 onMounted(loadReports);
 watch(reportType, loadReports);

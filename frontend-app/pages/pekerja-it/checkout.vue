@@ -62,6 +62,22 @@
             </p>
             <p v-else class="text-sm text-gray-500">📱 Siap melakukan Check-out</p>
           </div>
+
+          <!-- 🧾 Input Manual -->
+          <div class="mt-6 w-80 text-center">
+            <input
+              v-model="manualQr"
+              type="text"
+              placeholder="Masukkan kode QR manual..."
+              class="w-full px-3 py-2 border rounded text-sm mb-2"
+            />
+            <button
+              @click="handleManualCheckout"
+              class="w-full px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm"
+            >
+              🚀 Checkout Manual
+            </button>
+          </div>
         </div>
       </div>
 
@@ -88,7 +104,6 @@
 </template>
 
 <script setup lang="ts">
-// Script tetap sama, hanya sidebar role diganti PEKERJA IT
 definePageMeta({ middleware: ["role"] })
 
 import { ref, onMounted, onBeforeUnmount } from "vue"
@@ -168,6 +183,18 @@ const submitReason = async () => {
 // 🔍 QR Handling
 let debounceLock = false
 const lastQr = ref<string | null>(null)
+
+// 🧠 Input manual
+const manualQr = ref("")
+
+const handleManualCheckout = async () => {
+  if (!manualQr.value.trim()) {
+    message.value = "⚠️ Masukkan kode QR dulu!"
+    return
+  }
+  await handleDecodedRaw(manualQr.value.trim())
+  manualQr.value = ""
+}
 
 const handleDecodedRaw = async (raw: string) => {
   if (!raw || debounceLock) return
